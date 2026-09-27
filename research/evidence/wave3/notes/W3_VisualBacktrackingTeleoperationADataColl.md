@@ -1,0 +1,16 @@
+# W3_VisualBacktrackingTeleoperationADataColl — Visual Backtracking Teleoperation: A Data Collection Protocol for Offline Image-Based RL (2022, arXiv 2210.02343)
+Setup: Real UR5 + pneumatic 3-finger gripper, T-shirt grasp-and-lift (single task, same shirt, distractors and lighting variation). Obs: wrist + overhead cams (360x640), EE xyz + gripper flag, 4-frame stack. Action: EE xyz displacement (<=5 cm) + gripper toggle + terminate. Datasets each 60 min of teleop (~10k steps). ResNet encoders trained from scratch with heavy aug (brightness, sharpness, color, contrast, artificial shadows, rotation, crop), 700k steps. Eval: randomized A/B test, 1437 episodes total, success by majority vote of 3 labelers.
+Claim: collecting failure -> recovery -> success within the SAME episode (visually matched) gives accurate value functions and better policies from small image datasets; OffRL (IQL) on it beats BC on clean successes.
+Evidence (Table I, success ± s.e.): Success-only data: BC 66±4, AWAC 67±3, IQL 69±3. Coverage+Success (separate failure episodes): AWAC 52±4, IQL 64±3. LfP+Success: AWAC 62±4, IQL 58±4. VBT: BC 73±3, AWAC 73±3, IQL 79±3.
+Ablations:
+ - Same data budget (60 min): adding recovery-in-episode data helps even plain BC (+7 pts, 66 -> 73) — BC learns retry behavior.
+ - Mixing in failures/play from SEPARATE episodes hurts OffRL (overfitting to spurious visual differences, Q histogram train/test mismatch, Fig 7).
+ - Q function trained on success-only data keys on proprio ("gripper closed & moving up") instead of image to predict success; VBT forces image attention (qualitative, Fig 5–6 on 35 held-out trajectories).
+Failure/limitations: one task, one object; operator must know the failure modes; short horizon; statistics per-policy not given in episodes per cell (1437 total over 9 policies ≈160 each). Recovery data contains deliberate failures that BC may imitate (BC gain is still positive here, but likely task dependent — failure actions like "miss the grasp" are imitated too).
+Conflicts: Agrees with DAgger/HG-DAgger and "recovery demos" literature that coverage of off-nominal states improves robustness; contrasts with claims that clean, consistent demos are what matter most (e.g., controller-shaped/consistent-demo papers) — reconciled: recovery should start from realistic failure states but the correcting action must be consistent.
+Relevance: Moderate. For our pumpkin pick-and-place with 50–100 demos, recording ~10–20% episodes that include a missed grasp followed by re-grasp (in the same episode, same scene) is cheap and yields retry behavior even with pure BC. Also a warning: the success-only critic/policy leaned on proprio instead of vision — same copycat risk for our policy.
+Decision impact:
+ - Q13 data quality/recovery: supports in-episode failure->recovery demos (BC 66 -> 73, IQL 79) over clean-success-only at equal teleop time — confidence M (real, many episodes, but one task).
+ - Q13 data: weakens mixing in separately-collected failure/play episodes for small image datasets (OffRL 52–64 vs 67–69) — confidence L-M.
+ - Q05 augmentation: heavy photometric+shadow+crop aug made scratch ResNet training viable on ~10k steps (not ablated) — confidence L.
+ - Q07 history/copycat: success-only models key on proprio state, ignore image — confidence L (qualitative).

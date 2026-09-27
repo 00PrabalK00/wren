@@ -1,0 +1,15 @@
+# W3_ImperfectionforPrecisionUpcyclingImperfe — Imperfection for Precision (eps4P): Upcycling Imperfect Data for High-Precision Robotic Manipulation (2026, arXiv 2609.26672)
+Setup: Rainbow RB-Y1, pi0.5 fine-tune (flow matching), two RealSense D405 cams (UMI camera placement matched to robot). Tasks: ATX 24-pin insertion (~0.2 mm clearance), two-stage cable plugging (~0.3 mm), bolt-nut sorting (coarse). Data: high-precision teleop target Dpt (ATX 300, Cable 100, Sorting 100); low-precision UMI target-task data Dpm (100/50/50); high-precision teleop of a different task (3-prong plug) Dtm (100/50/50); extra teleop Dpt+ (100/50/50). 60 real trials per task.
+Claim: route imperfect data to parts of the flow-time axis: low-precision same-task data only at high noise (context/coarse structure), precise other-task data only at low noise (fine action refinement); boundaries set offline (source classifier AUC; action-vs-context reliance crossover, t*~0.43).
+Evidence:
+ - Native co-training HURTS (Table II; ATX / Sorting / Cable S1 / Cable full): Dpt only 48.3/81.7/90.0/78.3; +UMI low-precision 33.3/75.0/70.0/25.0; +other-task 43.3/78.3/86.7/71.7; +both 38.3/73.3/75.0/33.3. Precision tasks lose 34.2 pts avg with low-precision data vs 6.7 on coarse sorting.
+ - eps4P (Table III): +Dpm 73.3/93.3/98.3/90.0; +Dtm 71.7/88.3/100/81.7; +both 80.0/91.7/98.3/88.3 (up to +31.7 pts).
+ - Same amount of extra perfect teleop Dpt+: 75.0/95.0/100/91.7 — eps4P with UMI data nearly equal; avg drop 4.2 pts across sources.
+Ablations: opposite flow-time window: Dpm 30.0 vs 73.3; Dtm 46.7 vs 71.7 (ATX). Global loss down-weighting of Dpm (w 0.25/0.5) never beats Dpt-only (figure only, qualitative). t_tm sweep on Cable 0.2/0.4/0.6: 0.4 best (figure).
+Failure/limitations: single platform, small data, controlled multi-camera setup. Critical read: large pretrained pi0.5 with 100-300 demos; ATX baseline only 48% so there's room; 60 trials per cell is good sample size.
+Conflicts: Contradicts "more data is always better"/naive co-training — low-precision demos mixed uniformly harm precision tasks badly (cable 78.3 -> 25.0), consistent with data-quality literature (e.g., demo consistency matters). Consistent with Ambient Diffusion Policy (noise-level-restricted use of suboptimal data).
+Relevance: For SO-101 with sloppy/jittery teleop episodes or community data from other tasks: don't naively mix; either filter or, with a flow/diffusion head, restrict imperfect data to high-noise timesteps (trivial one-line change in t-sampling per source). Pumpkin pick-place is coarse, where harm is small (sorting -6.7 pts). Also argues for a flow/diffusion head because it enables this routing.
+Decision impact:
+ - Q13 data quality: low-precision demos mixed naively harm precise tasks (-34.2 pts avg), little effect on coarse tasks (-6.7) — confidence H (60 trials/cell, 3 tasks, controlled).
+ - Q13 data reuse: with flow-time routing, imperfect/other-task data approaches equal amount of perfect data (-4.2 pts avg) — M.
+ - Q01 action head: supports flow/diffusion heads for enabling noise-level data routing — L (indirect).

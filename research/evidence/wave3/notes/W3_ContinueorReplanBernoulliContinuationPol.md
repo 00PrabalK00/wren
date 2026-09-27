@@ -1,0 +1,19 @@
+# W3_ContinueorReplanBernoulliContinuationPol — Continue or Replan? Bernoulli-Continuation Policy Learning for Adaptive Horizon Execution (2026, arXiv n/a in text)
+Setup: frozen chunked base policies (LingBot-VLA w/o depth, ABot-M0, ACT on RoboTwin 2.0, 50 tasks; pi0.5 on LIBERO / LIBERO-PRO); prediction and default execution horizon 50 steps (ALOHA-AgileX @50 Hz = 1 s); candidate execution horizons 15–50 in steps of 5; 2-layer transformer continuation head (~16.4M params) trained with GRPO on 8× A100 using trajectory outcomes; real AGIBOT G1, 2 tasks, 250 task demos + 2,000 general grasp demos for SFT, 128 real rollouts for RL, 50 seeds × 3 trials.
+Claim: WHEN the chunk boundary falls (relative to critical manipulation stages) matters more than horizon length; a learned per-chunk continue/replan head improves success without extra inference cost.
+Evidence:
+ - Phase-shift study (Table 1, LingBot, fixed 50-step horizon, only the initial phase ϕ changed): average SR 88.52%; per-task best phase 93.65% vs worst 82.50% (11.3 pt gap). Place Dual Shoes: 0.92 best vs 0.80 worst phase.
+ - RoboTwin 2.0 LingBot: 13 hard tasks 75.15 → 86.23% (Clean), 73.54 → 83.46% (Randomized, trained on Clean only); 50 tasks 89.88 → 93.94% and 88.78 → 92.84%. "Similar trends" with ABot-M0 and ACT (table columns garbled in extraction).
+ - pi0.5 LIBERO 97.0 → 98.7%; LIBERO-PRO position perturbations 30.9 → 37.7% (+2.9 over AAC).
+ - Real AGIBOT G1: grasp bottle 74 → 92%; hang mug 44 → 84% (AAC 48%).
+ - Runtime (Table 4): +2.03 ms per query (938.10 → 940.13 ms); VLA calls 5.382 → 5.614; executed steps 269.1 → 248.1; runtime 10.43 → 10.24 s.
+Ablations:
+ - Fixed shorter horizons (20/30/40) do NOT beat the full 50-step chunk (Figure 4, figure only, qualitative): "a shorter execution horizon is not inherently better"; uncertainty/entropy-based triggers (Uncertainty Proxy, AAC) give marginal gains and much higher runtime (need multiple chunk samples).
+ - Hanging Mug (Table 5): SFT 41%; RL fine-tune of the full action expert (442.8M trainable) 79%; RL softmax horizon head (16.4M) 78%; Bernoulli-continuation head 83%; + replanning-efficiency reward 87%.
+Failure/limitations: requires RL rollouts (sim parallel envs or 128 real trajectories); base VLA inference ~0.94 s per chunk; horizons are coarse (step 5). Critical read: real results use 150 trials each, good; but real SFT policy was trained with 2,250 demos.
+Conflicts: contrasts with the common heuristic "just execute fewer steps per chunk" (e.g., RTC/Diffusion Policy practice of short action horizons): here fixed shorter horizons do not help on RoboTwin; the benefit comes from timing replans before contact. Agrees with ACT's view that longer chunks are fine in free space; consistent with "stale chunk" failure narrative in async/RTC papers.
+Relevance: moderate. Our jerky chunk boundaries + stale chunks during grasping of pumpkin map directly onto this. We cannot easily do RL, but a cheap proxy is state-dependent replanning: shorter execution horizon (fresh observation) near the object / gripper closure, long horizon in free space (e.g., trigger on gripper-command change or wrist-cam proximity). Note 11 pt swing just from phase alignment means evaluation of chunk settings needs many trials.
+Decision impact:
+ - Q06 chunking/execution horizon: boundary timing relative to grasp moves SR 82.5–93.7%; fixed shorter horizons don't beat full chunk; adaptive replan-before-contact +4 (sim) to +18/+40 pts (real) — supports stage-adaptive execution horizon over a single fixed one — confidence M-H.
+ - Q10 latency/async: adaptive head adds 2 ms and lowers total runtime; uncertainty-sampling triggers are costly — supports lightweight learned/heuristic triggers over multi-sample uncertainty — confidence M.
+ - Q14 robustness: gains hold under Randomized RoboTwin (+4.06) and LIBERO-PRO position shifts (+6.8) — L.

@@ -1,0 +1,8 @@
+# W3_DeepSE3EquivariantGeometricReasoningforP — Deep SE(3)-Equivariant Geometric Reasoning for Precise Placement Tasks (2024, ICLR; RelDist)
+Setup: keyframe relative-placement (cross-pose) prediction from segmented point clouds (Vector-Neuron DGCNN, invariant RelDist representation + differentiable multilateration + SVD); motion planner executes; not a closed-loop visuomotor policy. RLBench 5 placement tasks x 10 demos (1000 test inits, pose error); NDF mug/bottle/bowl with 10 demos; real = offline evaluation on TAX-Pose's mug-hanging dataset (no new real rollouts).
+Claim: provably SE(3)-equivariant relative-pose prediction is 2–9x more precise in rotation than TAX-Pose with 10 demos.
+Evidence (RLBench, rotation deg / translation m, TAX-Pose vs Ours): stack wine 1.485/0.003 vs 0.764/0.001; toilet roll 1.173/0.001 vs 1.150/0.001; hang hanger 5.471/0.012 vs 0.624/0.002; phone on base 4.144/0.005 vs 0.804/0.001. NDF mug success at penetration thresholds: qualitatively better (Table 2 numbers not reliably extractable); bottle/bowl inconclusive (TAX-Pose baseline not reproducible).
+Failure/limitations: requires object segmentation + point clouds, keyframe only, planner-based execution, symmetric objects problematic, no closed-loop control or visual-shift tests.
+Relevance: minimal for our SO-101 continuous teleop BC policy; placing a pumpkin in a tray does not need mm/deg precision, and the approach replaces the policy with a planner. Only a weak reminder that explicit geometric (3D, segmented) structure yields equivariance to object pose with ~10 demos.
+Decision impact:
+ - Q04 3D/depth: weak support for segmented point-cloud geometric reasoning for precise placement with 10 demos (not closed-loop) — confidence L.

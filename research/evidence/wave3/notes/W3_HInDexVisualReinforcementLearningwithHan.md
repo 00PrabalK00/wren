@@ -1,0 +1,13 @@
+# W3_HInDexVisualReinforcementLearningwithHan — H-InDex: Visual Reinforcement Learning with Hand-Informed Representations for Dexterous Manipulation (2023, arXiv 2310.01404)
+Setup: SIM ONLY, Adroit/DexMV 30-DoF dexterous hand, 12 tasks, DAPG-style RL + 25–50 demos per task, 224×224 single camera, frozen visual encoder feeding an MLP policy (256,256). Encoder: ResNet-50 from FrankMocap 3D hand-pose model; Stage 2 adapts only BatchNorm affine params (0.18%) with a self-supervised keypoint reconstruction objective on 50 demo videos; Stage 3 updates BN running stats with momentum during RL. 3 seeds.
+Claim: a human-hand-pose-pretrained ResNet with minimal BN adaptation beats generic robotic representations (VC-1, MVP, R3M, ImageNet) for dexterous visual RL.
+Evidence (success %, avg of 12 tasks, Table 2 appendix): RRL (ImageNet ResNet-50, frozen) 81.3; R3M 42.3; MVP (ViT-S MAE) 63.1; VC-1 (ViT-B MAE) 70.8; H-InDex 91.3. Normalized return: +16.8 abs over VC-1.
+ - Unseen backgrounds (relocate potted meat can, 9 new scenes, 20 eps×seeds): VC-1 16.8% avg vs H-InDex 20.7% — BOTH collapse from ~in-dist (VC-1 original score 2392 → avg 393).
+Ablations (figures only, qualitative): Stage 1 (hand-pretraining) gives largest gain; adapting 100% of params in Stage 2 is worse than adapting BN only and "could be even worse than the frozen model"; momentum m matters (grid 0/0.1/0.01/0.001, task-specific best).
+Failure/limitations: sim only, RL (not BC), dexterous hand (hand-pose prior irrelevant to a parallel gripper); background shift destroys all frozen encoders.
+Conflicts: ImageNet ResNet-50 (81.3) beating R3M (42.3) and VC-1 (70.8) matches other findings that robot-specific pretrained reps (R3M/VC-1) don't reliably beat ImageNet under a fair protocol. "Full finetune worse than frozen/partial" conflicts with BC papers (Diffusion Policy) where end-to-end finetuning wins — here the finetune objective is a self-supervised aux on few videos, not the policy loss.
+Relevance: low. Useful only as (a) weak evidence that ImageNet ResNet is a strong default vs R3M/VC-1, (b) partial (BN/adapter) adaptation as a middle ground between frozen and full finetune in low data, (c) frozen pretrained features do NOT buy background robustness.
+Decision impact:
+ - Q03 vision encoder: ImageNet ResNet-50 (81.3) > VC-1 (70.8) > MVP (63.1) > R3M (42.3) frozen, dexterous RL sim — confidence L (RL, sim, dexterous).
+ - Q03 finetune strategy: BN-only adaptation > full finetune ≥ frozen (figure only) — confidence L.
+ - Q14 robustness: frozen pretrained encoders (VC-1/hand-ResNet) collapse on new backgrounds (~17–21% vs ~near-100 in-dist) — confidence L/M (sim, 9 scenes).

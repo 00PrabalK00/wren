@@ -1,0 +1,11 @@
+# W3_DABIEvaluationofDataAugmentationMethodsU — DABI: Evaluation of Data Augmentation Methods Using Downsampling in Bilateral Control-Based Imitation Learning with Images (2024, arXiv 2410.04370)
+Setup: real OpenMANIPULATOR-X (4-DoF + gripper), bilateral (force-feedback) leader/follower; robot data at 1000 Hz, overhead + gripper RGB at ~100 Hz (360×640); Bi-ACT (ACT with angle/velocity/torque, 15-D action chunk) at 100 Hz. ONE task (Put-in-Drawer: open, pick, move, place, close); 5 demos total (one per training object); 8 objects (5 trained, 3 untrained), 5 trials per object.
+Claim: pairing each image with multiple temporally-offset high-rate robot samples (symmetric around the image timestamp) multiplies data ~10× and sharply raises success from 5 demos.
+Evidence: Table II numbers not recoverable from the extracted text (only row/column labels survived). Authors' text: Method1 (plain downsampling, 5 demos) mostly failed beyond "open", Pink/Black bouncy balls 0 success; Method2 (augment by pairing image with the robot samples after it, 50 "demos") perfect on Foam ball but inconsistent on untrained objects; Method3 DABI (symmetric samples before/after image) 100% on all 8 objects and all stages.
+Ablations: forward-only offset (Method2) vs symmetric offset (Method3) → symmetric better (qualitative, no extractable numbers).
+Failure/limitations: one task, 5 trials/object, 5 demos, no variance; torque/velocity inputs specific to bilateral control; "100% everywhere" on a single task with tiny n is weak evidence. Essentially temporal jitter augmentation of state/action vs image alignment.
+Conflicts: consistent with the general finding that small temporal/state jitter regularizes ACT-style policies; no contradiction.
+Relevance: moderate-low. SO-101 leader/follower has no force feedback, but the trick transfers: record joint states at high rate (Feetech bus ~100+ Hz) while cameras run at 30 fps, then create multiple (image, state/action-chunk) pairs per frame with small time offsets. Cheap, no GPU cost. Evidence strength is poor.
+Decision impact:
+ - Q05 augmentation: weakly supports temporal-offset (image↔proprio/action jitter) augmentation from high-rate robot logs — confidence L (1 task, 5 trials/object, numbers not extractable).
+ - Q13 data quantity: 5 demos + 10× temporal augmentation sufficed for one ACT task — confidence L.

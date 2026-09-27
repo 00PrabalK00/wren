@@ -1,0 +1,16 @@
+# W3_GivingRobotsaHandLearningGeneralizableMa — Giving Robots a Hand: Learning Generalizable Manipulation with Eye-in-Hand Human Video Demonstrations (2023, arXiv 2307.05959)
+Setup: Real Franka Panda, eye-in-hand RGB only (100x100, top 36 rows masked to hide gripper/hand), 3-DoF delta EE position (+3-DoF delta Euler for toy packing) + binary gripper; 8 real tasks (4 env-generalization: reaching, cube grasping, plate clearing, toy packing; 4 task-generalization). Robot demos narrow (one env), human forearm-camera videos broad; actions for human video inferred by an inverse dynamics model trained on robot play data. BC with NLL; 10 rollouts/test cell (20 for toy packing). Demo counts / architecture are in the appendix, which is missing from the extracted text.
+Claim: masked eye-in-hand human videos (labeled by an IDM) added to narrow robot demos give large environment and task generalization, better than CycleGAN translation.
+Evidence (Table 1, env generalization, robot / robot+play / robot+human CycleGAN / robot+human mask):
+ - reaching 10.0 / 20.0 / 53.3 / 86.7; cube grasping 0 / 21.7 / 36.7 / 51.7; plate clearing 0 / 23.3 / 46.7 / 56.7; toy packing 10.9 / 30.0 / 15.0 / 59.6; average 5.2 / 23.8 / 37.9 / 63.6.
+ - Task generalization avg (longer task never shown by robot): 0 / 8.75 / 12.5 / 58.75 (e.g. cube stacking 0/10/0/40; toy packing 0/15/0/45). The short robot task itself stays 90–100% for all.
+Ablations (Table 2, aggregated): full 54.3 ± 6.0; no mask 24.3 ± 5.1; mask but no grasp-state input 28.6 ± 5.4 (policy re-grasps repeatedly because masked image hides whether object is held).
+ - robot+play (larger than human set) < robot+human → diversity of the relevant task's scenes matters more than raw data volume.
+Failure/limitations: authors: masking fails for tiny objects (<1.5 cm); requires a robot play dataset for the IDM. Critical read: 10 trials per cell; low-res small networks; robot-only baseline collapses to 0–10% under new backgrounds, showing how brittle narrow single-environment demos are; eye-in-hand only, so no scene-camera comparison here.
+Conflicts: consistent with Hsu et al. 2022 (wrist view aids generalization) and with the data-diversity-over-quantity findings (e.g. data scaling-law work): more of the same-environment play data helps less than diverse relevant data.
+Relevance: moderate. Not a method we'd adopt wholesale, but two transferable lessons: (1) a narrow 50–100-demo single-scene dataset generalizes ~0% to new backgrounds, so diversity in backgrounds/lighting during collection (or cheap handheld-wrist-cam human videos) is the lever; (2) if the wrist image does not show gripper state, feed gripper state as proprioception (SO-101 gives it for free).
+Decision impact:
+ - Q13 data: supports diverse-scene data over more same-scene data (robot-only 5.2% vs +diverse human 63.6% avg env-gen; +bigger play set only 23.8%) — confidence M (real, 10–20 trials).
+ - Q14 robustness: narrow robot demos fail on unseen backgrounds/distractors (0–11%) — confidence M.
+ - Q11 cameras: eye-in-hand view enables cross-embodiment (human→robot) transfer with simple masking — confidence L-M (no third-person comparison here).
+ - Q07/proprio: grasp-state input needed when image lacks it (54.3 vs 28.6) — confidence M.

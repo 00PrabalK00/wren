@@ -1,0 +1,19 @@
+# W4_ControlVLAFewshotObjectcentricAdaptation — ControlVLA: Few-shot Object-centric Adaptation for Pre-trained Vision-Language-Action Models (2025, arXiv 2506.16211)
+Setup: Base policy = 29M-param Diffusion Transformer (CLIP ViT-B/16 vision, To=2, Ta=16, DDIM) pre-trained on full DROID (wrist cam only, EE pose + gripper) 3 days on 4×A800. Fine-tune adds ~5M params, 12 h on one A800. Object-centric condition: GroundingDINO+SAM2 masks of task objects (language-prompted), per-object sinusoidal encoding of mask centroid + from-scratch CNN on mask; injected via extra cross-attention with zero-initialized KV projections (ControlNet-style). Short-horizon: Franka FR3 + UMI-collected data with wrist GoPro only, 6 tasks, 11–20 demos each, 20 trials each. Long-horizon: AstriBot-S1 (wrist RealSense), 25 demos, 30 trials.
+Claim: pretrained diffusion policy + zero-init object-centric conditioning learns tasks from 10–20 demos (76.7%) where DP/ACT/Octo/VIOLA fail.
+Evidence:
+ - 6 short tasks overall: ControlVLA 76.7%; Diffusion Policy 20.8%; ACT 5.0%; Octo 1.6%; VIOLA 0.0% (per-task/pi0 bars figure only).
+ - Long horizon (30 trials): OrganizeMultiObjs DP 10.0%, pi0 23.3%, ControlVLA 56.7%; ReplaceObjInDrawer 6.7 / 16.7 / 63.3%.
+ - Data scaling OrganizeToy (10/20/50/100 demos, 25 trials): ControlVLA 80% at 20 demos, "unattained by baselines even at 100" (curve figure only).
+ - Generalization (OrganizeToy, 20 demos, ID 90%): unseen objects 76.7/63.3/70.0% (avg 70%), unseen background 60%.
+ - Appendix Tab 4, pi0 vs ControlVLA@pi0 (20 trials): OrganizeToy 55→85, Scissors 15→80, OpenCabinet 45→85, FoldClothes 40→75; overall 38.6→81.3%.
+Ablations (figure only, qualitative): w/o pretrain (object-centric DP from scratch) → severe execution jitter and large drops; w/o object-centric (plain fine-tune of pretrained DP) → only marginal gain over DP from scratch; w/o zero-init → "drastic drop". Removing all three = DP baseline.
+Failure/limitations: authors: single-arm, controlled indoor. Critical: ablation numbers only in bar figure; eval in same environment; relies on GroundingDINO+SAM2 at inference (latency not reported; SAM2 tracking cost on an 8 GB laptop is a concern); ACT's 5% in 11–20 UMI demos with a single wrist GoPro is low vs ACT paper — the regime (tiny data, wrist-only, UMI SLAM actions) disfavors it; authors attribute to posterior collapse.
+Conflicts: ACT gets ~5% here vs ACT paper's 80–90% at 50 demos → strong dependence on demo count and camera setup. "Pretraining without object-centric = marginal gain" contrasts with VLA fine-tuning papers where pretraining alone gives big gains — here the pretrained model is small (29M) and DROID-only. Object-centric masks for robustness agree with other object-centric/mask papers (e.g., the language-guided object-centric DP in this set).
+Relevance: for SO-101 pumpkin/tray, a SAM2/GroundingDINO mask → centroid + mask-CNN token stream would directly address "different-looking pumpkin" and background/lighting changes (70% novel objects, 60% novel background with only 20 demos). Zero-init injection is a cheap trick to add a new conditioning stream to a pretrained policy (e.g., SmolVLA) without destroying it. Main risk: segmentation latency/robustness under lighting.
+Decision impact:
+ - Q14 robustness: supports object-centric mask conditioning for novel objects/backgrounds (70% / 60% zero-shot, 20 demos) — confidence M (single task, same room, 30 trials).
+ - Q13 data quantity: supports pretrained prior + object-centric for 10–20 demos; DP needs >100 for comparable — M.
+ - Q12 model size: a 29M DiT pretrained on DROID suffices as prior — L.
+ - Q01 action head: diffusion > ACT CVAE (5%) and Octo regression (1.6%) at 11–20 demos — L (baselines likely under-tuned; tiny-data regime).
+ - Q03 vision encoder: pretrained policy alone (w/o object-centric) only marginally better than scratch DP — L (figure only).

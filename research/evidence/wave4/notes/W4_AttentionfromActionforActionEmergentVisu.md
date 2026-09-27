@@ -1,0 +1,23 @@
+# W4_AttentionfromActionforActionEmergentVisu — Attention from Action, for Action: Emergent Visual Bottlenecks for Policy Learning (Seeker) (2026, arXiv 2608.13422)
+Setup: Seeker = task/state-FiLM query iteratively cross-attending (2 updates, gated multi-head) over FROZEN DINOv3 patch tokens, trained only with a diffusion action loss; its attention → top-p (0.8) mask + bbox, precomputed offline, used to (a) crop the third-person view (wrist view never cropped) + FiLM on box coords, (b) mask-guided Random Overlay augmentation, (c) filter point clouds for DP3. Downstream policy = Diffusion Policy with pretrained ResNet-18. Sim: 6 MimicGen tasks, 100 demos/task, 3 seeds, 240→224 random crop. Real: xArm7, fixed third-person + eye-in-hand RGB (848×480 → 240×240), EE position control 10 Hz, 10-D actions (pos + 6D rot + gripper), 3 tasks with 50/100/100 teleop demos, 20 rollouts per condition (ID, lighting shift, background shift). Seeker adds ~12 ms/step at inference; 1.5–1.8× training cost.
+Claim: an action-supervised ROI bottleneck over frozen DINO features improves data efficiency and robustness to lighting/background vs no-crop, augmentation and keyframe-heuristic crops.
+Evidence:
+ - Sim (Table 1, 100 demos, avg of 6): DP (pretrained R18) 32.5; MirrorAug 37.2; RVT2-Crop 42.6; Seeker 62.6; Oracle ROI 64.2; RAVEN (equivariant) 52.1. Largest gains 3-Piece Assembly 26.7→58.7, Threading 20.7→38.0.
+ - Real (Table 2, 20 rollouts each; MirrorAug / RVT2-Crop / Seeker): Coffee ID 45/40/85, Light 30/15/80, Bg 0/0/35; Cleanup ID 40/60/80, Light 10/25/75, Bg 10/35/60; Board ID 20/45/65, Light 0/20/60, Bg 20/25/50. Avg ID 35.0/48.3/76.7; avg OOD 11.7/20.0/60.0; retention 33.4/41.4/78.2%.
+ - DP3 point cloud (200 demos): no crop ≈0 on all tasks; manual workspace crop avg low; manual+Seeker +24.7 (Pick&Place), +24.0 (Stack3), +42.3 (Coffee) abs. Still below RGB policies.
+Ablations:
+ - FiLM-on-box-only (no crop) avg 39.4 (−23.2) vs low-res crop 61.2 (−1.4) → explicit cropping (reducing visual search) is what helps; high-res ROI content secondary.
+ - Seeker objective: direct regression gives noisy ROIs (IoU 0.30 to diffusion-Seeker), IMLE 0.50, flow matching 0.67 (qualitative: regression suffers multimodality).
+ - Seeker pretraining coverage: Most-25 spatially diverse demos 61.6 vs Full-100 62.0 vs Least-25 58.4 → spatial coverage > count.
+ - Random Overlay (p=0.5 from start) "crucial" for ROI quality (figure only); background-randomized training (25 textures) gives mixed effects — diversity alone does not guarantee bg generalization.
+ - Rolling out actions directly from Seeker's pooled frozen-DINO context → near-zero success (max 20% Stack-3): frozen DINO global readout lacks fine geometry/contact info.
+Failure/limitations: two-stage pipeline; only 2 baselines in real (no plain DP w/o aug, no VLA); 20 trials; lighting shift over-exposes wrist cam; requires spatially varied demos; RVT2 baseline is authors' reimplementation.
+Conflicts: Agrees with "frozen pretrained features alone insufficient for control" (Theia/others) yet shows frozen DINO good for WHERE-to-look. Agrees with green-screen/mask-aug works (e.g. RoboAgent/GreenAug) that preserving task region while perturbing background beats full-image random overlay. Point-cloud DP3 weaker than RGB DP here — conflicts with DP3/iDP3 claims, likely because MimicGen tasks need rotation inference and large workspaces (sparse points).
+Relevance: Very close to our setup (fixed scene cam + wrist cam, 50–100 teleop demos, 10 Hz, lighting/background shift). Cheap recipe: crop the scene-camera view to a task-relevant ROI (even a learned or simple fixed crop) + mask-guided background overlay; keep wrist uncropped. Adds only ~12 ms. For a single pick-place pumpkin task, a simple crop around workspace might capture much of the gain; the object-shift case (new pumpkin) is not tested.
+Decision impact:
+ - Q05 augmentation: supports mask-guided (foreground-preserving) overlay augmentation over uniform random overlay; plain bg-randomized data mixed — M (real 20 trials × 3 tasks)
+ - Q14 robustness: ROI cropping of scene cam raises real OOD (lighting/bg) avg 20→60% and retention 41→78% — M
+ - Q03 vision encoder: frozen DINOv3 good for attention/localization but global frozen readout insufficient for control; pretrained ResNet18 policy encoder used — L/M
+ - Q11 cameras: keep wrist cam uncropped; wrist view fragile under lighting over-exposure / target leaving FOV, scene view needed — L
+ - Q13 data: spatial coverage of demos matters more than count (Most-25 ≈ Full-100 for ROI learning) — L (sim, auxiliary module only)
+ - Q04 3D: DP3 below RGB DP on MimicGen even with ROI filtering at 200 demos — L (sim)

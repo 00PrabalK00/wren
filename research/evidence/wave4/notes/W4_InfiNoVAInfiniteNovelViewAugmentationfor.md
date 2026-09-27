@@ -1,0 +1,16 @@
+# W4_InfiNoVAInfiniteNovelViewAugmentationfor — InfiNoVA: ∞ Novel View Augmentation for Viewpoint Invariant Robot Policies (2026, arXiv id not in text)
+Setup: SO-101 arm (!), 4 real tasks (Pick-and-Place cube, Sweep, Sort, Stack), 70 demos/task recorded with 5 synchronized third-person cameras spanning ~180° + wrist cam; per-timestep 3D Gaussian splat (InstantSplat++) → up to 15 novel third-person views/timestep, 100 virtual episodes per demo → 7,000 episodes/task; novel poses azimuth ±90°, r 0.6–1.2 m, elevation 0–90°. Policy: SmolVLA with wrist + two third-person inputs (wrist kept original), batch 64, same epochs for all. Eval: 100 rollouts per result under randomized unseen viewpoints/distances.
+Claim: dense geometrically consistent novel-view augmentation from multi-camera demos makes SmolVLA viewpoint-invariant; far better than generative NVS (VISTA) or training on the 5 physical views.
+Evidence (avg over 4 tasks): Baseline trained & tested on reference view 65.3%; same policy under random views 7.5% (−88.5% relative); VISTA-augmented 7.5%; InfiNoVA 40.5% (5.4×). Pick-and-Place: reference 76%, random 6%, 5-physical-view multi-view training 24%, InfiNoVA 40%. Per-task bars figure only.
+Ablations:
+ - Single view → 5 physical views (no NVS): 6% → 24% on random-view Pick&Place; → dense NVS 40%.
+ - Generative NVS (VISTA, fine-tuned) gives no gain (7.5%): hallucinated task state creates contradictory state–action pairs.
+ - NVS compute per episode: VISTA 1,575 s, InfiNoVA 437 s, GLD 36,204 s.
+Failure/limitations: needs synchronized 5-camera rig for reconstruction; offline per-timestep reconstruction expensive; single robot/policy; views sampled within observed arc only. Critical read: even with dense NVS, 40.5% random-view vs 65.3% fixed-view — large residual gap; wrist cam present yet baseline still collapses to 7.5%, meaning SmolVLA over-relies on the third-person views; no photometric/lighting tests.
+Conflicts: agrees with CrossViewActionConsistency (nominal-only VLA collapses under camera shift, 16.8%) and CLASS (camera-diverse data needed). Contradicts naive expectation that the wrist camera alone gives viewpoint robustness — here SmolVLA with wrist cam still drops 76→6.
+Relevance: HIGHEST relevance — exact robot (SO-101) and exact policy (SmolVLA) we use, 70 demos/task (our regime). Directly explains our "slightly moved camera" failure: single-view SmolVLA falls 88% under view change. Practical takeaways: (1) collect with ≥2 scene cameras or move the scene camera between demo sessions; (2) generative single-image NVS isn't enough; (3) 3DGS needs multi-cam rig — costly for us; cheaper is multi-camera training + consistency loss (CrossView) or fixed rigid camera mount.
+Decision impact:
+ - Q11 cameras: single fixed scene view SmolVLA 65.3%→7.5% under view shift even with wrist cam; 5 physical views → 24% — H for the problem (same robot/policy, 100 rollouts), M for remedy.
+ - Q05 augmentation: supports geometrically consistent 3D NVS augmentation (40.5% vs 7.5%); weakens single-image generative NVS (VISTA 7.5%) — M.
+ - Q14 robustness (camera shift): pretrained VLA (SmolVLA) not viewpoint robust; must be engineered via data/aug — H.
+ - Q13 data diversity: viewpoint diversity count matters (1→5→dense views: 6→24→40%) — M.

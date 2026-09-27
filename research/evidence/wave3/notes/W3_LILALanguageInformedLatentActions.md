@@ -1,0 +1,4 @@
+# W3_LILALanguageInformedLatentActions — LILA: Language-Informed Latent Actions (2021, arXiv 2111.03205)
+Not relevant. Shared-autonomy joystick interface on a Franka: a state-based (no vision) conditional autoencoder maps 2-DoF joystick input to 7-DoF actions, with language added through FiLM and nearest-neighbour retrieval of training utterances. It was tested in a user study with 10 users. The fully autonomous IL baseline (state-only, 30 demos/task) failed, but it has no vision and no chunking, so it tells us nothing about our policy design. The only transferable idea (Q08) is to map free-form test instructions onto the nearest training instruction with a sentence encoder, which avoids language OOD when a policy has few instructions.
+Decision impact:
+ - Q08 language: ~ nearest-neighbour retrieval of training instructions as a cheap guard against paraphrase OOD — confidence L (not a visuomotor policy)

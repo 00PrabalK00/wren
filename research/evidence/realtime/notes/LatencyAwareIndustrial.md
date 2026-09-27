@@ -1,0 +1,14 @@
+# LatencyAwareIndustrial — A Latency-Aware Framework for Visuomotor Policy Learning on Industrial Robots (Ruan et al., Princeton, 2026, arXiv 2602.14255)
+Setup: ABB industrial arm (EGM interface ~83 Hz), eye-in-hand RGBD + F/T sensor, VR teleop demos, Diffusion Policy (10 DDIM steps = 49 ms; 100-step DDPM = 466 ms on their workstation). Contact-rich timber lap-joint insertion, translation-only, fixed initial pose. Injected inference latency 100/300/500 ms; 20 rollouts per (strategy, latency). Measured camera observation latency ≈82 ms (QR-code clock method), robot execution latency ≈225 ms (trajectory-alignment fit).
+Method (execution-side only, no retraining): timestamp every predicted action at (observation time + i·Δτ); each command cycle sends the buffered action for t_now + execution_latency (linear interpolation between actions); discard actions whose time has passed; replace buffer when a new chunk arrives; hold last pose if the buffer runs dry.
+Evidence (medians, Table 1 / text):
+ - Latency-aware execution (LAE): task duration within 13% and motion smoothness (jerk, m/s³) within 9% of the demonstration reference at all latencies 100–500 ms. At 100 ms: duration Ref 13.60 s vs LAE 12.08 s; motion smoothness Ref 0.47 vs LAE 0.47.
+ - Blocking execution: duration grows with latency (100 ms: 18.36 s; 300 ms: 20.72 s), large idle ratio.
+ - Naive async: fastest (100 ms: 9.33 s) but median peak contact force 5.1–5.5× the demonstration reference, contact force 2.4–4.5×, oscillatory contact.
+Ablations: none beyond strategies × latency.
+Failure/limitations: one task, fixed start pose, success rate not discriminative (all succeed), industrial arm with 225 ms execution latency. Critical read: shows that execution-side bookkeeping alone (no model change) fixes most of the timing error when the policy is unimodal enough; does not address mode switching between chunks.
+Conflicts: agrees with SAIL's action scheduling and RTC's "execute committed prefix, discard stale" rule; naive streaming (what SmolVLA's default async largely does) produces force overshoot — consistent with RTC's protective-stop observation for TE/naive.
+Relevance: high and zero-cost for SO-101: (1) measure camera latency (QR clock on screen) and servo execution latency (commanded-vs-measured trajectory shift) and include them in the delay; (2) timestamp chunks by observation time and index into them by wall clock; (3) at 10 fps data, interpolate between actions to the servo loop rate.
+Decision impact:
+ - Q10 async bookkeeping: timestamp-indexed action buffer with stale-action discard + execution-latency lead — SUPPORTED — M (20 rollouts × 3 latencies, 1 task).
+ - Q10 latency sources: observation (~82 ms) and actuator (~225 ms) latencies are comparable to inference latency and must be measured — M.

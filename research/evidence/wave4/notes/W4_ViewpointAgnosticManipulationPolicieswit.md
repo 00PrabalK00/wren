@@ -1,0 +1,16 @@
+# W4_ViewpointAgnosticManipulationPolicieswit — Viewpoint-Agnostic Manipulation Policies with Strategic Vantage Selection (2025, arXiv 2506.12261)
+Setup: Sim: RoboSuite/RoboMimic Lift, Square, Pick&Place with BC, BCQ, BCT, Diffusion Policy pretrained at default viewpoint, then fine-tuned on demos from newly chosen camera poses (quarter-sphere Θ); Vantage = GP-UCB Bayesian optimization over camera pose (q candidates per round, fine-tune per viewpoint, evaluate across Θ, ~10–15 iterations, ≈1 h per round). Real: Unitree D1 7-DoF arm, ACT policy, REACHING task only, varied external camera placements. Trial counts not reported.
+Claim: fine-tuning on a few strategically chosen viewpoints gives more viewpoint robustness than random/grid multi-view data, which can act as noise.
+Evidence (text-confirmed numbers; Table I extraction partially garbled):
+ - Pick&Place Diffusion, accuracy across Θ: base 37.01% → Vantage 83.20%; dynamic camera 88.3 → 97.2%.
+ - Square Diffusion, dynamic camera: 8.3 → 54.7%. Pick&Place BC dynamic: 3.0 → 9.9%.
+ - Base policies trained at a single view collapse across Θ (e.g. BC Pick&Place 0.80% across Θ vs 70% at default; Lift BC 6.90% across Θ vs 100% default).
+ - Table II (across-Θ success, VR-1 view / VR-8 views / generated aug 5 views / Vantage 1 view): Pick&Place BC 2.1/4.3/1.2/3.9; Pick&Place DP 63.8/42.6/52.3/83.2; Square BC 0.9/0.3/0.3/1.0; Square DP 12.3/17.5/14.6/14.8; REAL ACT reaching 36.0/30.0/—/44.0.
+Ablations: random viewpoint randomization with 8 views DEGRADES DP Pick&Place (63.8 → 42.6); generated novel-view augmentation (VISTA-like) 52.3 < Vantage; robust within ≈5% to camera placement noise (sim).
+Failure/limitations: real experiment is only reaching with ACT (44% best), trial counts unknown; requires iterative data collection + fine-tuning per candidate viewpoint (expensive on real hardware); RoboMimic scripted/human sim data; gains small for BC/Square.
+Conflicts: "More random viewpoints hurts" conflicts with sim2real DR studies where camera-pose randomization was the single most helpful factor (W4_Grounding: small ±1 cm perturbation) — difference is magnitude: Vantage's Θ spans a quarter-sphere (huge shifts), random views include occluded/uninformative poses; small jitter is helpful, huge random viewpoints spread a small data budget. Wrist cameras (not used here) are the standard answer to scene-camera viewpoint shift.
+Relevance: Moderate-low. Our camera shift is "slightly moved" scene RealSense, not quarter-sphere changes. Lessons: (a) single-view training → near-total collapse under viewpoint change, so we need either small-perturbation augmentation (random shift/crop/perspective) or a few demos from 2–3 slightly different scene-camera poses; (b) don't spread limited demos over many random wide viewpoints. Real evidence too thin to size effects.
+Decision impact:
+ - Q11 cameras/viewpoint: single-viewpoint policies collapse off-view; a few well-chosen extra viewpoints > many random ones (DP 83.2 vs 42.6) — confidence L-M (mostly sim).
+ - Q05 augmentation: random wide-view randomization and generated novel views are inferior to targeted viewpoints — confidence L.
+ - Q14 robustness (camera shift): supports collecting some demos at 2–3 nearby camera poses — confidence L.

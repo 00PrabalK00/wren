@@ -1,0 +1,8 @@
+# W3_HumanintheLoopTaskandMotionPlanningforIm — Human-In-The-Loop Task and Motion Planning for Imitation Learning (HITL-TAMP) (2023, arXiv 2310.16014)
+Setup: robosuite sim (12 contact-rich long-horizon tasks, 2.1K demos) + real Franka (Coffee, Stack Three, Tool Hang; 50–100 demos); TAMP with known object poses handles free-space/transport, human teleop (phone, OSC) only for contact segments; BC-RNN (robomimic) trained on human segments only, deployed TAMP-gated. 15-user study, 10 min per system per task.
+Claim: letting a planner do the easy parts and learning only the contact-rich segments multiplies data throughput and policy success.
+Evidence: demos in 10 min, all users: Coffee 431 vs 168, Square Broad 747 vs 166, Three-Piece 227 vs 117. Per-user policies (10 min data): Coffee 90.7% vs 24.4%, Square Broad 80.0% vs 1.2%, Three-Piece 27.7% vs 0.0%. All-user data: 100/98/66% vs 76/20/0%. Novices: 90.0/77.5/17.5% vs 15.0/0.0/0.0%. TAMP-gating a policy trained on conventional data makes it comparable to HITL-TAMP data (figure only).
+Failure/limitations: requires object pose estimation / TAMP domain; sim-heavy; policy is low-dim or visuomotor BC-RNN; not about perception robustness.
+Relevance: Only indirect — for a single pick-place with 50–100 demos, the transferable idea is "restrict the learned policy to the hard contact segment (grasp) and script the rest" (reduces effective horizon and data need). Not applicable end-to-end without pose estimation.
+Decision impact:
+ - Q13 data: shortening the learned segment (learning only contact-rich parts) yields far higher success per minute of data (Square Broad 80% vs 1.2% from 10 min) — confidence L (sim, needs TAMP/pose info)

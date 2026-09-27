@@ -1,0 +1,16 @@
+# W3_SeeingAlltheAnglesLearningMultiviewManip — Seeing All the Angles: Learning Multiview Manipulation Policies for Contact-Rich Tasks from Demonstrations (2021/2022, arXiv 2104.13907, IROS 2021)
+Setup: UR10 on Ridgeback mobile base, base-mounted RealSense D435 (RGB+depth at 64x48!), FT sensor with compliant control; sim PyBullet (Lift, Stack, PickAndInsert <1 mm, Door) and real (PickAndInsert, Door, Drawer); 200 VR-controller teleop demos per task (14-32 min), trained at 25-demo (sim) / 50-demo (real) increments; policy = CNN (RGB layer ResNet-initialized) + spatial soft-argmax + 2x512 FC, MSE regression of 6-DoF EE velocity + gripper, 5-member ensemble; eval 50 episodes/policy (sim, 5 seeds), 10 episodes/policy (real, 3 seeds).
+Claim: collecting demos from randomized viewpoints (base yaw range 35-45 deg on an arc around the workspace) yields viewpoint-robust policies with little or no penalty on the fixed-view task given the same number of demos.
+Evidence (Figs 6, 7, 9 — figure only, qualitative; numbers not extractable reliably):
+ - Lift/Stack: multiview policy ~ fixed-view policy in both envs (camera and objects move together, little benefit).
+ - PickAndInsert/Door (sim) and DoorReal: fixed-view policy "fails often" when view changes; multiview policy improves with demo count; multiview loses slightly on fixed-view DoorSim but NOT on DoorReal (authors: exact base pose can't be reproduced in the real world, so even "fixed-view" deployments are slightly shifted).
+ - OOD view angles (sim, 200 demos, 50 episodes x 12 angle bins x 5 seeds): fixed-view policy drops "dramatically" with even small yaw changes; multiview policy holds across the training range and partially beyond it.
+ - Feature analysis: multiview-trained spatial soft-argmax keypoints are spatially consistent on gripper/door across views (view-invariance emerges from data alone).
+Ablations: demo count curves 25-200 per condition (figure only).
+Failure/limitations: tiny 64x48 images, MSE unimodal head; PickAndInsertReal high seed variance ("near misses"); real trials only 10 per policy; mobile-base setting where camera shift is large (tens of degrees) vs our "slightly moved" tripod camera.
+Conflicts: agrees with Decomposing-gap (camera pose is hardest factor for fixed-view data; diversity fixes it) and iDP3 (2D image policy fails on new view); contrasts with approaches that seek invariance via 3D/point clouds — here plain view randomization in the demos suffices, at the cost of more demos for tasks where viewpoint changes the required actions.
+Relevance: high for our "slightly moved camera" failure: deliberately move the scene RealSense between demo batches (small pose jitter) so the policy never keys on exact pixel positions; costs little at our demo counts. Wrist camera is naturally view-consistent relative to the gripper.
+Decision impact:
+ - Q11 cameras / viewpoint robustness: supports collecting demos under randomized camera poses — negligible fixed-view penalty, large gain under view change — M (sim 5 seeds x 50 episodes + one real task; figure-only numbers).
+ - Q14 robustness: fixed-view policies collapse with small camera yaw changes; multiview data generalizes somewhat beyond training range — M.
+ - Q13 data: diversity (viewpoints) at equal demo count costs little — L/M.

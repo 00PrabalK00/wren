@@ -1,0 +1,31 @@
+# W3_CageCausalAttentionEnablesDataEfficientG — CAGE: Causal Attention Enables Data-Efficient Generalizable Robotic Manipulation (2024, arXiv 2410.14974)
+Setup: Real Flexiv Rizon 7-DoF + Dahuan gripper; 2x RealSense D435 (1 fixed front + 1 in-hand), RGB 224x224; 3 tasks: Transport (pick-place, 50 demos), Dumping (6-DoF pour, 40), Chopping (long-horizon, 40), haptic teleop; training env deliberately mono-distributed (one background, one object, one camera pose). Model: DINOv2-LARGE frozen + LoRA r=16 → 2 cams x To=4 x 256 tokens compressed by a causal Perceiver to 4 tokens → diffusion Attn-UNet (256-512-1024, cross-attn to obs tokens, FiLM for timestep), 16 DDIM steps, Ta=20, relative action representation, proprio prefixed. Train 4xA100-80GB, 500 epochs, bs 64. Inference 280 ms on RTX 3090 (DP 100 ms, RISE 130 ms); parallel inference/execution at 10 Hz, re-predict every 0.35 s, temporal ensemble over first 12 steps. Trials: stage success in steps of 1/15 → ~15 trials per setting (not stated explicitly). Baselines: DP (ResNet-50, To=2, Ta=16, same augs) and RISE (point cloud from fixed cam, To=1, absolute camera-frame actions).
+Claim: frozen-VFM+LoRA encoder + token-preserving compression + attention-conditioned diffusion head gives visual generalization (bg/object/camera) from ~50 single-environment demos where DP (RGB) and RISE (3D) collapse.
+Evidence:
+ - L0 (train env): Dumping #balls/10 DP 4.2, RISE 9.3, CAGE 7.5 (given grasp: 7.0/9.3/9.4); Chopping #chops/4 DP 2.0, RISE 2.8, CAGE 2.3. Transport L0 figure only (CAGE ~RISE > DP; ablation table gives CAGE 1.00, DP 0.73 final).
+ - L1 Transport overall success: background DP 0.00 / RISE 0.13 / CAGE 0.87; new object block/ball DP 0/0, RISE 0/0, CAGE 0.80/0.67; camera moved ~16 cm + D415 swap DP 0.27 / RISE 0.60 / CAGE 0.80.
+ - L1 Dumping #balls: bg 0.0/0.8/4.4; obj 0.2/0.2/6.2; cam 1.9/4.6/5.7. Chopping #chops: bg 0.1/0.0/2.2; obj 0.3/0.4/1.8; cam 1.2/0.6/1.5.
+ - L2 (bg+obj+cam all changed, geometric aug for all image policies), Tab II: DP and RISE 0 on every metric; CAGE Dumping #balls 3.4/10 (5.7/10 given grasp), Chopping 0.9/4 chops; Transport L2 stage success figure only. Abstract: 43% completion, 51% success on average at L2.
+ - RH20T (164 diverse demos, 4 embodiments) pretrain, out-of-box new scene: reach/grasp/drop 0.80/0.67/0.67 vs semi-in-domain 0.93/0.80/0.73 → diverse data largely substitutes for in-domain data; better inside RH20T workspace (7/8) than outside (3/7).
+ - Cross-embodiment (same model, new gripper/arm): Transport similar-env success 1.00→0.60 (Robotiq) →0.47 (RealMan).
+Ablations (Transport, sequential removal, final-stage success L0 / L1bg / L1obj / L1cam):
+ - CAGE: 1.00 / 0.87 / 0.80 / 0.80
+ - − Attn-UNet (FiLM conditioning instead of cross-attn): 0.80 / 0.67 / 0.73 / 0.67 (≈ −20 pts everywhere)
+ - − Causal Perceiver (DINOv2 tokens averaged): 0.40 / 0.13 / 0.00 / 0.20 → mean-pooling DINOv2 tokens is disastrous (spatial info lost)
+ - − DINOv2 (ResNet from scratch, To=4): 0.73 / 0.00 / 0.00 / 0.47 → ResNet better than pooled-DINOv2 in-domain but zero under bg/object change
+ - DP (ResNet-50, To=2): 0.73 / 0.00 / 0.00 / 0.27
+ - Geometric augmentation (random perspective + random crop) off→on: L2 0.40→0.73 (the stated +82.5%); L1,cam two alt views 0.80→0.87 and 0.80→0.93 (column order in extraction ambiguous). Baseline training used only color jitter + center crop.
+ - Obs horizon To (L0 Transport reach/grasp/drop): To=2 1.00/0.87/0.87; To=4 1.00/1.00/1.00; To=8 0.87/0.87/0.87 → mild optimum at 4 (1–2 trials difference).
+Failure/limitations: ~15 trials per cell, single seed; DINOv2-large + 4xA100 training and 280 ms inference on a 3090 (would not fit an 8 GB laptop comfortably at 224 with 2 cams x 4 frames without care); chopping fails without force; camera generalization tested with only 2 alt poses; baselines' "0" at L2 partly because DP used ResNet-50 from scratch (larger than usual, more overfit). Authors: workspace generalization needs trajectory-level augmentation.
+Conflicts: agrees with Theia/SPA/"What makes PVRs robust" line that pretrained VFMs help OOD visual shift, and with DP/ACT that end-to-end ResNet wins in-domain — CAGE shows both at once: the VFM only pays off if spatial tokens are preserved (pooling kills it). Contradicts the RISE claim of 3D robustness: RISE (single-view point cloud) collapsed on background/object change (0.13, 0) though it was best in-domain — color-jittered point clouds still overfit to scene appearance. Temporal history To=4 helped, unlike DP/copycat findings where more history hurts — here history is compressed through a causal perceiver.
+Relevance: Very close to our setup: 1 fixed RealSense + 1 wrist cam, 40–50 demos, single training environment, tested exactly on our failure modes (background, object appearance, 16 cm camera move). Directly suggests: pretrained frozen ViT (+LoRA) with token-level (not pooled) conditioning, plus perspective/crop augmentation. Compute is the issue: swap DINOv2-L for DINOv2-S/B (unablated here), fewer diffusion steps or flow; 280 ms latency needs async execution.
+Decision impact:
+ - Q03 vision encoder: supports frozen pretrained DINOv2 + LoRA with spatial tokens over from-scratch ResNet for OOD (bg 0.87 vs 0.00; obj 0.80 vs 0.00) — confidence M-H (real robot, single-env demos, ~15 trials)
+ - Q03 vision encoder: weakens mean-pooled VFM features (L0 0.40 vs 1.00 with perceiver) — confidence M
+ - Q05 augmentation: supports geometric (random perspective + crop) aug for camera/scene shift (L2 0.40→0.73) — confidence M
+ - Q04 3D vs RGB: weakens single-view point cloud as robustness fix (RISE bg 0.13, obj 0.00, L2 0) while best in-domain — confidence M
+ - Q14 robustness: pretrained-VFM RGB policy survives bg/object/camera shift from 50 mono-env demos (L1 0.67–0.87) — confidence M
+ - Q07 obs history: To=4 slightly better than 2 or 8 with causal compression (1.00 vs 0.87) — confidence L (1–2 trials difference)
+ - Q01 action head: cross-attention conditioning of diffusion head > FiLM (+~20 pts) — confidence L-M
+ - Q12 model size: DINOv2-L works at 40–50 demos when frozen+LoRA (no overfit) but 280 ms/3090 — confidence L for 8 GB feasibility
+ - Q13 data diversity: 164 diverse RH20T demos ≈ in-domain clean demos for OOD scene (0.67 vs 0.73 final) — confidence L

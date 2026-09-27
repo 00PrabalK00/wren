@@ -1,0 +1,15 @@
+# W3_SeFAPolicyFastandAccurateVisuomotorPolic — SeFA-Policy: Fast and Accurate Visuomotor Policy Learning with Selective Flow Alignment (2025/2026, arXiv 2511.08583)
+Setup: Diffusion-Policy-style visuomotor network trained as rectified flow, then reflow (distil onto noise->action couplings from the base policy) with "selective alignment": replace a generated action by its nearest ground-truth action when within threshold, then train a 1-step policy. Sim: 66 tasks (Adroit, RoboMimic, Meta-World, Franka Kitchen low-dim, Push-T), same hyperparameters as DP, no per-task tuning. Real: 7 tasks, 10 trials (first 3) / 20 trials (last 4); robot/demo counts not stated in main text read.
+Claim: one-step flow policy that matches/exceeds multi-step DP accuracy with ~98% lower latency.
+Evidence:
+ - Sim avg over 66 tasks: SeFA 62.3 vs DP 38.9 vs AdaFlow 40.9.
+ - Table II: Adroit Pen / Push-T / Square: SeFA 52 / 80 / 97; DP-100 20 / 78 / 83; DP-1-step 0 / 70 / 0; Consistency Policy 32 / 71 / 89; AdaFlow-20 37 / 72 / 90.
+ - Latency per prediction (RTX 6000 Ada): SeFA 16.7 ms (1 NFE), DP 1287 ms (100 NFE), Consistency 18.4 ms, AdaFlow 629 ms (20 NFE), 1-step DDIM 16.2 ms.
+ - Real (Table VI, DP vs SeFA): apple-in-bowl 100/100, moving duck 60/70, flower insertion 20/80, coffee-bean sweep 35/70, drawer close 40/60, rice pouring 0/30 (text says DP 10%), knob pull 0/40. Qualitative: trained on apple, grasps orange cube / rubber duck.
+Ablations (Table IV, Pen / Assembly / Plate-slide-side): base flow 100-step 43/27/100 (avg 56.7); plain reflow 1-step 40/7/100 (49.0); SeFA 1-step 52/33/100 (61.7). Solver (Table V): SeFA 1-step 62 vs 100-step 62 vs RK45 60 avg — one Euler step suffices after reflow. With point clouds (Adroit, 10 demos) SeFA 70 vs DP3 62 avg, lower variance.
+Failure/limitations: requires training a base policy, generating couplings, then retraining (2-3x training cost); nearest-neighbor alignment threshold heuristic. Critical read: DP baseline uses 100 DDIM steps at inference (DP is usually run with 10-16 steps), inflating the speedup; real trials small (10-20), real setup under-documented; DP real numbers surprisingly low (0% knob, rice).
+Conflicts: agrees with consistency-policy/one-step literature that distillation can keep accuracy; the claim that DP is "unstable across noise seeds" vs flow is consistent with some flow-vs-diffusion comparisons but contradicts DP paper's robustness claims; results depend on tuning.
+Relevance: For our 8 GB laptop and latency target: a small DP/flow policy with a 1-step (reflow/consistency) sampler gives ~17 ms per chunk on a desktop GPU, removing sampling cost; plain 1-step DDIM fails. Simple alternative: flow matching with few Euler steps (base flow 100-step vs 1-step after reflow similar).
+Decision impact:
+ - Q01 action head: supports flow matching (rectified) over DDPM/DDIM diffusion for accuracy at low step counts (66-task avg 62.3 vs 38.9) — confidence L/M (no tuning of DP, sim-heavy).
+ - Q10 latency: supports 1-step distilled flow sampling (16.7 ms vs 629-1287 ms multi-step) without accuracy loss; naive 1-step DDIM collapses — M.

@@ -1,0 +1,28 @@
+# robomimic — What Matters in Learning from Offline Human Demonstrations for Robot Manipulation (2021, arXiv 2108.03298)
+Setup: 5 sim tasks (robosuite/MuJoCo, Panda: Lift, Can, Square, Transport [bimanual], Tool Hang) + 3 real Franka tasks (Lift, Can, Tool Hang; 200 demos each, one operator). Sim datasets: Proficient-Human (PH, 200 demos, 1 operator; Transport 300), Multi-Human (MH, 300 demos, 6 operators × 50: 2 better/2 okay/2 worse), Machine-Generated (RL). Actions: delta EEF pose (3 trans + 3 axis-angle rot + gripper) at 20 Hz. Image obs: front (agentview) + wrist cam, ResNet-18 + spatial softmax per cam (image size not in extracted text), + EEF pose + gripper. BC-RNN: 2-layer LSTM, hidden 400 (low-dim) / 1000 (image), seq length 10, GMM head (5 modes), LR 1e-4. Algorithms: BC, BC-RNN, HBC, IRIS, BCQ, CQL. Eval: 50 rollouts every E epochs, report MAX success over training, 3 seeds (sim); real: final checkpoint, 30 rollouts. 90/10 train/val split.
+Claim: history-dependent BC (BC-RNN) is the strongest learner on human demos; batch RL fails on human data; observation space, wrist cam, pixel-shift aug, hyperparameters and checkpoint selection matter a lot.
+Evidence:
+ - Low-dim (Table 1), BC vs BC-RNN: Square PH 78.7 vs 84.0; Transport PH 17.3 vs 71.3; Tool Hang PH 29.3 vs 19.3 (BC better here; HBC 30.0); Can MH 86.0 vs 100; Square MH 52.7 vs 78.0; Transport MH 11.3 vs 65.3. BCQ/CQL collapse on human data (CQL Square PH 5.3, Transport 0).
+ - Image (Table 3), BC vs BC-RNN: Lift PH 100/100; Can PH 97.3/98.0; Square PH 62.0/82.0; Transport PH 55.3/72.0; Tool Hang PH 20.0/67.3; Can MH 85.3/96.0; Square MH 46.0/76.7; Transport MH 18.7/42.0. Image ≈ low-dim for BC-RNN.
+ - Suboptimal data (Table 2, 100-demo subsets): BC Can Worse/Okay/Better 56.7/72.0/83.3 vs BC-RNN 92.0/95.3/99.3; Square BC 22.0/27.3/58.7 vs BC-RNN 39.3/45.3/66.0. Adding 100 worse demos to 100 better: BC-RNN Square 66.0→73.3 (improves), BC Square 58.7→46.7 (hurts). MH (300 demos) < PH (200 demos) for all methods → quality > quantity.
+ - Real (final ckpt, 30 trials): Lift 96.7, Can 73.3, Tool Hang 3.3; Can −pixel-shift aug 26.7, Can −wrist 43.3.
+ - Dataset size (Fig 3, figure only, qualitative): Lift/Can reach 75–100% with 20% of data (~40 demos PH); Square/Transport drop substantially at 20–50%.
+Ablations (BC-RNN, relative success change, Fig 2):
+ - Obs space: +EEF velocity or +joint pos/vel → −49% to −88% for low-dim agents, −2% to −29% for image agents (overfitting to extra proprio).
+ - −pixel-shift randomization: −47% Square, −35% Transport (image). −wrist cam: −9% Square, −43% Transport.
+ - LR 1e-4→1e-3: −35% to −63% for image agents. No GMM (deterministic): large drops on MH (low-dim Transport −58%); App: gap smaller for BC-RNN than BC. Larger MLP on top of RNN: uniformly worse (overfitting). Shallow conv instead of ResNet-18: −25% to −62%. Smaller RNN dim: −3% to −58%.
+ - RNN sequence length 10 vs 30 vs 50: "longer sequence length does not improve performance significantly" (App D.2).
+ - Policy selection (Fig 4a/5, figure only, quantitative range in text): choosing checkpoint by lowest validation loss OR by last checkpoint gives 10%–100% relative drop vs best checkpoint.
+Failure/limitations: reported sim numbers are best-over-training (optimistic, by authors' own finding in Sec 4.5). 3 seeds. Real eval uses one operator, 200 demos, no robustness shifts. BC baseline here is single-step MLP without action chunking — history's gain partly compensates for lack of chunking/temporal consistency (pre-dates ACT/DP).
+Conflicts: "history is crucial" disagrees with Copycat/BAKU/Diffusion Policy results where obs history ≥2 gives little or hurts. Reason: robomimic's BC has no action chunking, so the RNN's temporal abstraction substitutes for chunking (handles non-Markovian human pauses/multimodality); once chunking is used (ACT, DP, BAKU), the benefit of history largely disappears. Diffusion Policy paper uses these same tasks and reports better results with 2-frame history + chunking than BC-RNN. Val-loss selection failure agrees with CopycatAgents App. Table 7.
+Relevance: SO-101 teleop by one or two operators is closest to PH/MH. Directly relevant: (1) include wrist cam and pixel-shift (random crop) aug — the real-robot drops (73→27 without aug, 73→43 without wrist) are large; (2) keep proprio minimal (don't add joint velocities); (3) GMM/multimodal head helps with mixed-quality human data; (4) lower LR (1e-4) for image agents; (5) cannot pick checkpoints by val loss — must budget real rollouts for a few candidate checkpoints, or train fixed schedule and evaluate last+few. ~40 demos was enough for Can-like pick-place in sim.
+Decision impact:
+ - Q07 history: supports temporal context (BC-RNN) ONLY for non-chunked single-step policies; with chunking prefer current obs (+maybe 2 frames) — confidence M (strong numbers but confounded with lack of chunking).
+ - Q13 data: supports quality > quantity (MH 300 < PH 200; worse operators hurt BC) and ~40–100 demos enough for simple pick-place — confidence M/H.
+ - Q05 augmentation: supports random-shift/crop aug (real Can 73.3 vs 26.7 without) — confidence H.
+ - Q11 cameras: supports wrist cam (real Can 73.3 vs 43.3 without) — confidence H.
+ - Q01 head: supports multimodal (GMM) head for multi-human data; deterministic −58% on MH Transport — confidence M.
+ - Q03 vision: supports ResNet-18-size encoder over shallow conv (−25–62%) — confidence M.
+ - Q12 model size: larger MLP on top hurts (overfitting) — confidence L/M.
+ - eval/checkpoint: weakens val-loss and last-checkpoint selection (10–100% relative drop vs best) — confidence H.
+ - proprio: weakens adding joint velocities/extra proprio (−49–88% low-dim, −2–29% image) — confidence M.

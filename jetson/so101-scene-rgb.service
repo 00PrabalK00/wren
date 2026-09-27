@@ -1,0 +1,13 @@
+[Unit]
+Description=SO-101 RealSense colour stream to the laptop
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=kurat
+ExecStart=/home/kurat/so101/scene_rgb_stream.sh
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

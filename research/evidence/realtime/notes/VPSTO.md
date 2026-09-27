@@ -1,0 +1,9 @@
+# VPSTO — VP-STO: Via-point-based Stochastic Trajectory Optimization for Reactive Robot Behavior (ICRA 2023, arXiv 2210.04067, Oxford/Idiap)
+Setup: classical (non-learned) sampling-based MPC over the FULL horizon: sample a few via-points (N ≤ 4) with CMA-ES, synthesize kinodynamically admissible (time-optimal-ish) trajectories, costs incl. duration, smoothness, collisions (discontinuous barrier costs allowed). Special no-via-point direct trajectory used when valid and for stopping behavior. Real Franka Emika: pick-and-place with moved targets and robot disturbances (object pose tracking assumed), replanning at 12.5 Hz; box pushing to a moving target with a quasi-dynamic box model at 20 Hz.
+Claim: a low-dimensional via-point parameterization makes full-horizon stochastic trajectory optimization fast enough for reactive closed-loop manipulation.
+Evidence: sim 2D cluttered point mass (100 runs) — full-horizon VP-STO avoids local minima that short-horizon MPPI-style MPC gets stuck in (figure); real demos at 12.5–20 Hz are qualitative (videos), no success-rate tables.
+Failure/limitations: needs explicit goal/object state and task cost; via-point count tuned heuristically; no learning.
+Conflicts: complements ParallelSMPC — both show 8–20 Hz replanning is the practical ceiling for sampling MPC on real arms; both need state estimates, unlike visuomotor policies.
+Relevance to SO-101: a model-based fallback / reflex for well-defined sub-motions (e.g., "retract to safe pose", "go to pre-grasp above detected pumpkin") can use a tiny via-point trajectory generator with duration/jerk costs; it needs a pumpkin position estimate (RealSense depth). Not a replacement for the learned policy.
+Decision impact:
+ - Scripted/optimized recovery primitives (retract, re-approach) with low-dim trajectory parameterization — PLAUSIBLE — L (qualitative evidence).

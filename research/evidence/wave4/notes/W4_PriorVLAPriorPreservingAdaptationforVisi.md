@@ -1,0 +1,18 @@
+# W4_PriorVLAPriorPreservingAdaptationforVisi — PriorVLA: Prior-Preserving Adaptation for Vision-Language-Action Models (2026, arXiv 2605.10925)
+Setup: built on π0.5 (PaliGemma-class VLM + flow-matching action expert). Frozen copy of pretrained action expert ("Prior Expert") run alongside a trainable "Adaptation Expert"; learnable Scene/Motor/Action query tokens; trains AE + queries + VLM vision encoder (≈25% of full-FT params; 0.85B trainable in ablation). 30k steps. RoboTwin 2.0: 13 bimanual tasks, 50 clean demos/task, 300 eval trials, Easy=ID / Hard=OOD (domain randomized). LIBERO 4 suites. Real: 8 tasks, Franka single-arm + AC-One dual-arm, 100–300 demos/task (standard) or 10 (few-shot); OOD jointly perturbs light, background, object position, table height; success in 5% steps (≈20 trials/task, not stated explicitly). Compute not stated; runs extra frozen expert at inference.
+Claim: freezing pretrained components as read-only prior sources and learning query interfaces into a trainable copy beats full fine-tuning, most under OOD and few-shot.
+Evidence:
+ - RoboTwin 2.0 avg (Table 1, Easy/Hard): DP 36/0 (0 on all 13 Hard tasks), π0 44/17, RDT 62/22, π0.5 full FT 67/42, PriorVLA 77/53.
+ - Data scale (Table 2, Easy few/std/large; Hard few/std/large): π0.5 29/67/89; 20/42/59 — PriorVLA 41/77/88; 31/53/65. ID gain vanishes with large data, OOD gain persists (+6).
+ - LIBERO avg: PriorVLA 99.1 vs π0.5 96.9, OpenVLA-OFT 97.1, DP 72.4.
+ - Real standard data (Table 4): ID π0.5 69, GR00T-N1.7 53, PriorVLA 81; OOD 41 / 31 / 57.
+ - Real 10-demo few-shot (Table 5): ID π0.5 24 vs 48; OOD 10 vs 32.
+Ablations (Table 6, 6 RoboTwin tasks, Easy/Hard): full 77/49; no Prior Expert 75/42; random frozen PE 75/43; trainable PE (1.28B) 73/44; no queries at all 61/28; drop Scene Queries 71/43 (largest single Hard drop); drop MQ 75/42; SQ+AQ only etc.
+Failure/limitations: RoboTwin subset (13 of 50 tasks); OOD factors applied jointly (can't tell lighting vs background vs position effect); extra inference cost from running frozen expert; huge base model (π0.5 ~3B) — not laptop-friendly at our latency target.
+Conflicts: agrees with the broad "full fine-tuning erodes pretrained generalization" finding (e.g., OpenVLA-OFT/π0.5 knowledge-insulation, frozen-VLM works). Contrasts with small-policy papers where from-scratch DP is competitive in-distribution — here DP collapses to 0 under OOD randomization, showing small from-scratch policies have no OOD robustness without augmentation/diverse data.
+Relevance: our SmolVLA fine-tune breaks under lighting/object/camera shift — this paper suggests the cause may partly be full fine-tuning destroying priors; freezing VLM (except vision encoder) and adding a trainable action branch could retain robustness. But 10-demo few-shot real OOD is only 32% even for the best method → pretrained priors alone won't solve our shift problems; augmentation/data diversity is still needed. Latency cost increases (extra expert), which conflicts with our 2 s latency problem.
+Decision impact:
+ - Q12 model size / fine-tune strategy: partial-freeze VLA fine-tune beats full FT, esp. OOD (Hard 42→53; real OOD 41→57) — confidence M (sim 300 trials + real 8 tasks).
+ - Q03 vision encoder: they fine-tune the vision encoder while freezing LLM — supports "train encoder, protect language/semantic backbone" — confidence L (not ablated separately).
+ - Q14 robustness: small from-scratch DP gets 0% on RoboTwin Hard vs 36% Easy — from-scratch small policies are brittle to lighting/background/clutter randomization — confidence M.
+ - Q13 data: prior-preservation helps most with few demos (few-shot real ID 24→48); with large data ID gains vanish — confidence M.

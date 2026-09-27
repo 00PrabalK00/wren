@@ -1,0 +1,14 @@
+# W3_StabilizetoActLearningtoCoordinateforBim — Stabilize to Act: Learning to Coordinate for Bimanual Manipulation (BUDS) (2023, CoRL, arXiv 2309.01087)
+Setup: 2x UR16e + Robotiq 2F-85, impedance controller 10 Hz; 3 RealSense (overhead D405, side D435, wrist D435), 2 of 3 used per task; 4 real bimanual tasks (pepper grinder, jacket zip, marker cap, cut vegetable); stabilizer = ResNet34 keypoint heatmap from 30 hand-labelled images (aug 10x) + ResNet34 restabilize classifier (2000 labelled images); acting arm = BC-RNN (ResNet18 end-to-end, history 20, 3-D delta-EE actions) from 20 SpaceMouse single-arm demos starting pre-grasped; GTX 1070; 10 trials per cell.
+Claim: decomposing bimanual tasks into a keypoint-based stabilizing arm and a single-arm IL acting arm enables learning from few unimanual demos.
+Evidence (Table 1, % task completion, 10 trials): BUDS avg 76.9 (Pepper 100, Jacket clean 72.1, occluded 55.7, Marker 90.1, Cut veg 66.8) vs BC-Stabilizer (same BC-RNN learns stabilizer from demos) avg 20.9 (39.9 / 28.2 / 21.6 / 0.0 / 15.0). Monolithic 14-DoF BC = 0 on all tasks (stated, no table). OOD objects (Table 2): Easy/Hard — Jacket 62.3/28.8, Marker 60.0/53.3, Cut veg 85.0/26.6; avg 52.7.
+Ablations:
+ - Remove restabilizing classifier (No-Restable): Jacket clean 72.1 → 58.8, Cut veg 66.8 → 46.6; occluded jacket ~equal (55.7 vs 51.1).
+ - Acting policy data 20 → 40 demos on Hard OOD objects: Jacket 28.8 → 23.1, Marker 53.3 → 56.7, Cut veg 26.6 → 30.0 — no significant gain: "large visual and dynamic differences ... cannot be remedied with more in-distribution data".
+ - Keypoint (structured, 30 labelled images) vs BC-learned stabilizer: 76.9 vs 20.9 avg.
+Failure/limitations: most common failure = acting policy (little data, high precision); stabilizing failures from visual differences/occlusion; vision-only → fails on visually different objects; fixed roles. My read: 10 trials with std up to ±39; heavy human structure (keypoints, pre-grasp, fixed orientation); metric is partial completion.
+Conflicts: consistent with data-diversity literature (doubling in-distribution demos doesn't fix OOD appearance; diversity or augmentation needed), e.g. Data Scaling Laws for IL (Lin et al.) diversity > count.
+Relevance: low for architecture (bimanual, BC-RNN, 10 Hz). Transferable: (1) more same-object demos did not help a different-looking object — our "different-looking pumpkin" failure needs object diversity/augmentation, not more demos of the same pumpkin; (2) structured intermediate (keypoint heatmap) from very few labels beats end-to-end BC for "where" decisions.
+Decision impact:
+ - Q13 data: supports diversity over count for novel-object generalization (20→40 in-distribution demos: no gain on Hard OOD) — confidence L (10 trials, huge std).
+ - Q14 robustness: novel-looking objects drop 76.9 → 52.7 avg (Hard objects 27–53%) for ImageNet-ResNet vision-only policies — confidence L-M.

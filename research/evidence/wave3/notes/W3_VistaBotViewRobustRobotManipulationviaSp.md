@@ -1,0 +1,16 @@
+# W3_VistaBotViewRobustRobotManipulationviaSp — VistaBot: View-Robust Robot Manipulation via Spatiotemporal-Aware View Synthesis (2026, arXiv 2604.21914)
+Setup: Train on ONE fixed front camera (50 demos/task); test from rotated cameras (+-30, +-45 deg about the workspace vertical axis). Pipeline: VGGT (fine-tuned) estimates depth + relative pose of test view -> reproject point cloud into training view -> CogVideoX video diffusion inpaints holes (with pose interpolation + temporal memory of last frame) -> policy (ACT or pi0) consumes DiT latents instead of ResNet/ViT features. Sim: RLBench 8 tasks, 25 trials per view. Real: Franka FR3, three D435 cams (front = train, sides = test), 4 tasks x 50 demos, 25 trials per view. Whole pipeline ~3 Hz.
+Claim: geometry + video-diffusion view synthesis gives calibration-free viewpoint robustness for closed-loop BC.
+Evidence:
+ - RLBench avg SR (0 / -45 / -30 / +30 / +45 deg): ACT 0.83 / 0.16 / 0.28 / 0.25 / 0.13 -> VistaBot-ACT 0.42 / 0.64 / 0.64 / 0.52 at rotated views; pi0 0.84 / 0.23 / 0.32 / 0.38 / 0.24 -> 0.62 / 0.73 / 0.76 / 0.76. VGS ACT 0.24 -> 0.67, pi0 0.33 -> 0.87.
+ - Real avg SR (0 / -45 / +45): ACT 0.79 / 0.15 / 0.18 -> ours 0.53 / 0.61; pi0 0.87 / 0.22 / 0.28 -> 0.65 / 0.72. VGS ACT 0.21 -> 0.72, pi0 0.27 -> 0.79.
+ - NVS quality: FID 69.6 vs 102.7 (AnySplat) / 118.3 (LangScene-X); PSNR 18.3.
+Ablations: GT depth/extrinsics VGS 0.79 vs estimated 0.67; without temporal memory 0.48.
+Failure/limitations: severe occlusions degrade synthesis; ~3 Hz loop (heavy: VGGT + CogVideoX per step — not feasible on 8 GB GPU in real time). Critical read: only training on a single view (worst case for baselines); evaluation shifts are large (30-45 deg), not the few-cm shifts we see; no comparison against simply collecting multi-view or randomized-camera training data, or against depth/point-cloud policies.
+Conflicts: Consistent with MV-MWM and Bridge/others: fixed single-view training is catastrophically brittle to viewpoint (ACT -84% at 45 deg; even 30 deg drops 0.83 -> ~0.27; pi0 pretraining only marginally helps: VGS 0.33 vs 0.24). Large pretrained VLA does not solve viewpoint shift.
+Relevance: Quantifies our "slightly moved camera" failure: single-fixed-view policies (ACT and pi0) lose most success under view change; large VLA pretraining is not a fix. Practical implications for SO-101: rely more on the wrist camera, add camera-pose diversity during data collection, or use depth/3D (reprojecting RealSense depth to a canonical view is the cheap geometric core of this method without the diffusion inpainting — we have depth, so reprojection with known/estimated extrinsics is feasible).
+Decision impact:
+ - Q11 cameras / viewpoint: single-view-trained ACT and pi0 collapse under 30-45 deg camera changes (ACT 0.83 -> 0.13-0.28 sim; real 0.79 -> 0.15-0.18) — confidence H for the brittleness finding (sim+real, 25 trials/view, two policy classes).
+ - Q04 3D/depth: supports geometric reprojection (depth + pose) to a canonical view as the core of viewpoint robustness (GT geometry VGS 0.79) — M.
+ - Q12 model size: pi0 (large VLA) only marginally more view-robust than ACT (VGS 0.33 vs 0.24 sim; 0.27 vs 0.21 real) — M.
+ - Q10 latency: this style of test-time view synthesis runs at ~3 Hz — not compatible with our latency budget — M.

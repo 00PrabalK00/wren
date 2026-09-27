@@ -1,0 +1,20 @@
+# W4_CoLAFlowPolicyTemporallyCoherentImitatio — CoLA-Flow Policy: Temporally Coherent Imitation Learning via Continuous Latent Action Flow Matching for Robotic Manipulation (2026, arXiv 2601.23087, RA-L)
+Setup: Two stages: (1) VAE over action chunks (temporal conv + GRU encoder across segments, KL + smoothness penalty; MLP decoder FiLM-modulated by wrist-cam ResNet-18 features); (2) consistency flow matching (1-step) in latent space, conditioned on a custom local+center point-cloud encoder (512 FPS points from fixed global camera, workspace-cropped) via two-stage FiLM. Horizon 28, 12 obs steps(!), 16-step predicted chunk, execute 8. Sim: Adroit + MetaWorld (37 tasks), 30 scripted demos/task, 50 rollouts, 3 seeds, no wrist cam. Real: Franka + LEAP hand or parallel gripper, global RealSense L515 RGB-D + wrist D435, 640×480 @30 fps, 4 tasks, 30 teleop demos/task, 3×10 trials. RTX 4080/4090D; 150 epochs.
+Claim: flow matching in a temporally coherent continuous latent action space gives 1-step inference AND smooth, stable execution, beating raw-action flow, VQ-latent and diffusion baselines.
+Evidence:
+ - Sim (Table II, avg Adroit/MetaWorld; per-step latency): DP (RGB 84×84) 31.7 / 35.7 ms; Flow Policy 61.0 / 6.1 ms; DP3 65.7 / 55.9 ms; iDP3 67.0 / 58.9 ms; RDP 73.0 / 57.3 ms; CoLA 78.3 / 7.5 ms. Smoothness (lower better, Fig. 5) CoLA 0.052, −51% vs RDP, −69% DP3, −77% Flow Policy.
+ - Real (Table III, 30 trials/task; P&P hand / P&P gripper / peg-in-hole / obstacle; avg; latency): DP3 66.7/80.0/35.0/50.0 avg 57.9, 29.3 ms; RDP (wrist cam) 73.3/93.3/50.0/63.3 avg 70.0, 31.8 ms; Flow Policy 60.0/73.3/30.0/46.7 avg 52.5, 6.5 ms; CoLA 83.3/96.7/60.0/70.0 avg 77.5, 8.6 ms. Real smoothness −93.7% vs Flow Policy.
+Ablations:
+ - Long-horizon multi-object pick-place (Table IV): raw Flow Policy 20% (oscillations trigger protective stops), VQ-latent Flow 70%, continuous GRU-latent 80%; smoothness 0.22 / 0.053 / 0.020; latency 6.6/8.5/8.6 ms.
+ - Point-cloud encoder: DP3 encoder 70% vs theirs 85% (real pick-place).
+ - Wrist camera removed: target-perturbation recovery 90% → 30%.
+ - Non-recurrent latent encoder "empirically increases jitter" (no numbers).
+Failure/limitations: RGB DP baseline at 84×84 without wrist cam is weak (31.7) — not a fair RGB comparison; real baselines DP3 and Flow Policy lack wrist cam while RDP/CoLA have it, confounding the success gap (their own ablation shows wrist cam 30→90% on recovery). 30 trials/task. No robustness to lighting/camera shift tested. Latency excludes sensing.
+Conflicts: Agrees with RDP and ACT (CVAE latent) that an action autoencoder/latent smooths execution. Contradicts claims that raw-action 1-step flow/consistency is sufficient (Flow Policy/consistency policy) — here raw 1-step flow is jittery on real hardware. DP3 < RGB claims of other papers (Seeker) diverge because here DP lacks resolution/wrist; not a clean 3D-vs-RGB test.
+Relevance: Our jerky chunk-boundary problem: evidence that (a) a latent action space with temporal (GRU/KL/smoothness) regularization reduces jerk substantially at ~same latency, (b) 1-step raw-action generators can be jittery. Point cloud from a single fixed RealSense works at 30 demos — our scene cam could provide it. Wrist cam critical for recovery. All ~8 ms on a 4080 → fine for laptop.
+Decision impact:
+ - Q01 action head: supports generative head in a learned continuous latent (VAE) space over raw-action 1-step flow; discrete VQ latent smoother than raw but worse than continuous — M (real, 30 trials, confounded by wrist cam in main table but clean in long-horizon ablation)
+ - Q10 smoothness/latency: raw 1-step flow jittery (20% long-horizon); latent flow 8.6 ms and 94% smoother; diffusion ~30–57 ms — M
+ - Q04 3D: point cloud from single fixed RGB-D with good local encoder works with 30 demos; better encoder +15 pts over DP3 encoder — L (no RGB baseline at fair resolution)
+ - Q11 cameras: wrist camera critical for perturbation recovery (90 vs 30%) — M
+ - Q06 chunking: 16 predict / 8 execute with 12-step obs history used; not ablated — L

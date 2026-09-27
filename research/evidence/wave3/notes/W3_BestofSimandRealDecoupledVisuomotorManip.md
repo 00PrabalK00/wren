@@ -1,0 +1,17 @@
+# W3_BestofSimandRealDecoupledVisuomotorManip — Best of Sim and Real: Decoupled Visuomotor Manipulation via Learning Control in Simulation and Perception in Real (BSR) (2025, arXiv n/a in text)
+Setup: Stage 1: PPO state-based control policy in parallel sim with privileged relative object state, curriculum domain randomization (pose, scale, mass, friction, obs/action noise, control delay), 10–20M env steps. Stage 2: freeze policy; train a small "visual bridge" on real demos: frozen DINOv2 ViT multi-layer features → adaptive projections + residual fusion + proprio MLP → policy input; L2 loss on expert actions through frozen policy; random crop + colour jitter; third-person + wrist cameras with calibrated extrinsics. 3 real tasks (stack cube 20×20 cm workspace, open drawer, close door); K = 10–80 real demos; robot not named in text; success rates in 1/60 increments (likely 60 trials per point).
+Claim: learn control in sim, perception in real → 4–8× fewer real demos and better spatial OOD than end-to-end BC.
+Evidence:
+ - K=10: BSR stack 73.3 / drawer 43.3 / door 88.3 vs best end-to-end baseline (same frozen DINOv2 encoder? "w/o pretrained state policy") 20.0 / 1.7 / 50.0. End-to-end approaches BSR only at K=80 (figure).
+ - Spatial OOD (stack, workspace expanded 20×20 → 40×40 cm): BSR 75% ID / 35% OOD; end-to-end 30% ID / 0% OOD; w/o visual bridge 5% ID; pure BC w/o pretrained encoder 10% ID; baselines 0 OOD.
+Ablations (Table I, K=20; stack / drawer / door):
+ - Full 91.7 / 71.7 / 100.0; single-layer (final) features 78.3 / 55.0 / 91.7; w/o residual 83.3 / 60.0 / 95.0; w/o proprioception 71.7 / 48.3 / (n/a in text); direct FC mapping 65.0 / 41.7 / (n/a).
+ - Pure BC with scratch encoder is worst across all K (figure).
+Failure/limitations: requires a sim model + reward engineering per task and calibrated camera extrinsics matching sim; robot and trial counts under-specified; baselines' tuning unclear; OOD test only on one task.
+Conflicts: End-to-end BC collapsing to 0% outside the demo workspace matches reports that BC does not extrapolate object positions (MiDAS object swaps → 0; data-scaling studies). Proprio helps here (−20 pts without) whereas AnchorVLA4D/AugInsert found proprio harmful — difference: here proprio feeds a sim-trained policy that uses relative geometry, not a memorizing BC net.
+Relevance: moderate. We could in principle build an SO-101 sim (ManiSkill has SO-100/101), but that's a big detour. Directly transferable: (1) frozen DINOv2 with MULTI-LAYER features beats last-layer-only (+13 pts) — relevant to how we tap a frozen encoder; (2) scratch-encoder BC is worst at 10–80 demos; (3) BC will not generalize beyond the demo placement region → demos must cover the full pumpkin/tray placement range.
+Decision impact:
+ - Q03 vision encoder: frozen DINOv2 multi-layer features 91.7/71.7 vs final layer only 78.3/55.0; scratch encoder BC worst — supports frozen DINOv2 with multi-scale features — confidence M
+ - Q13 data: end-to-end BC 30% ID → 0% OOD position; needs 4–8× demos to match sim-control prior — supports demos covering full workspace — confidence M
+ - Q14 robustness: spatial OOD 35% vs 0% for end-to-end — ~ decoupled perception/control for position generalization — confidence L (one task)
+ - Q07 proprio: w/o proprio 71.7/48.3 vs 91.7/71.7 (with sim-trained policy) — ~ proprio useful when policy uses relative geometry — confidence L

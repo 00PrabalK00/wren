@@ -1,0 +1,14 @@
+# Sentinel — Unpacking Failure Modes of Generative Policies: Runtime Monitoring of Consistency and Progress (CoRL 2024, arXiv 2410.04640)
+Setup: Diffusion Policy (standard prediction/execution horizons) on sim PushT, Close Box (bimanual mobile), Cover Object (14-DoF), plus real mobile-manipulator Push Chair (nonprehensile). OOD = scaled objects / shifted poses beyond demo range. Calibration: 50 successful in-distribution rollouts per sim task, only 10 for the real task. Metrics TPR, TNR, detection time.
+Method: (1) STAC — at each re-plan, sample a batch of B action chunks; compute a statistical distance (MMD with RBF, or KDE-KL) between the overlapping parts of the previous and current chunk distributions; CUMULATIVE sum over the episode; threshold = (1−δ) quantile of the cumulative score on successful calibration rollouts (conformal-style FPR ≤ δ guarantee). Targets fast "erratic" failures. (2) VLM video-QA (GPT-4o) on the rollout video for slow "task-progression" failures (stall, drift, confidently wrong). Run in parallel at different timescales.
+Evidence:
+ - Real Push Chair (Table 2, 10 successes + 10 failures): STAC (rev-KL) TPR 0.80, TNR 0.90; GPT-4o video QA TPR 0.90, TNR 1.00; Sentinel combined TPR 1.00, TNR 0.90, ~95% accuracy, mean detection time ~9.6 s.
+ - Sim: Sentinel detects >97% of unknown failures; combination detects 18% more failures than either alone. STAC is the only method with high balanced accuracy on multimodal PushT; DP output-variance baseline does poorly because multimodal policies naturally have high variance; embedding similarity to calibration data is surprisingly strong on PushT.
+ - GPT-4o mean response time 14.0 s — acceptable only for slow progress failures. VLM needs video (not single images) for high TNR.
+Ablations: statistical distance variants (MMD / fwd KL / rev KL) similar; cumulative vs per-step score (cumulative better); temporal-consistency versions of baselines don't consistently help.
+Failure/limitations: needs batch sampling each step (GPU cost scales with B, not reported); thresholds per task; real study is 20 rollouts; detection ≠ recovery (no recovery action).
+Conflicts: output variance is a poor failure signal for multimodal policies (agrees with FIPER's motivation), while HiPolicy/AAC use sample spread as a re-plan trigger — different purpose (horizon selection vs. failure alarm).
+Relevance to SO-101: STAC is cheap for a small flow/diffusion head (sample B chunks in one batch) and calibrates from ~10 successful rollouts — feasible for us. A local small VLM could replace GPT-4o for slow progress checks, but not at high rate.
+Decision impact:
+ - Runtime monitor = chunk-to-chunk consistency (STAC) calibrated on successful rollouts, conformal threshold — SUPPORTED — M.
+ - Slow progress check with a VLM at seconds timescale — M (GPT-4o; small local VLM untested).

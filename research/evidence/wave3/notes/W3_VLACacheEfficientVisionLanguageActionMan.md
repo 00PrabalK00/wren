@@ -1,0 +1,10 @@
+# W3_VLACacheEfficientVisionLanguageActionMan — VLA-Cache: Efficient Vision-Language-Action Manipulation via Adaptive Token Caching (2025, NeurIPS 2025; arXiv id not in text)
+Setup: training-free inference acceleration for 7B-class VLAs (OpenVLA, OpenVLA-OFT, CogACT): reuse KV of visual tokens whose pixel patches barely changed since the previous frame, but always recompute tokens with high text→vision attention (task-relevant), with per-layer reuse ratio set from attention entropy. LIBERO / SIMPLER on RTX 4090; real Kinova Jaco2, 4 tasks, 150–200 teleop demos/task at 10 Hz, OpenVLA LoRA.
+Claim: up to 1.7× lower CUDA latency and ~15% higher control frequency with negligible success loss.
+Evidence: OpenVLA LIBERO: −27.3% FLOPs, 1.63× latency, −0.3 pt success; OpenVLA-OFT +~14 Hz control frequency; CogACT SIMPLER −20% FLOPs, 1.37× latency. LIBERO-Spatial OpenVLA: baseline 84.4% / 51.6 ms; naive static reuse 74.2% / 31.0 ms; + evict task-relevant 82.6% / 31.0 ms; + layer-adaptive 83.8% / 32.2 ms. Token-count ablation: 100 reused tokens 83.8% vs 200 → 68.3%. Real: avg success +2.4 pts; PickPot under dynamic background: baseline 95 → 80%, VLA-Cache kept 80% with −42% FLOPs, −35% latency.
+Ablations: listed above; FastV/SparseVLM give no speedup and hurt success for short action outputs.
+Failure/limitations: only accelerates the LLM decoder of big VLAs; gains ≤1.7×. Critical read: irrelevant to a small CNN/ACT-class policy where the whole forward pass is ~10 ms; real results modest trial counts.
+Conflicts: none substantive; consistent with vla.simd note that model size, not micro-optimization, dominates latency.
+Relevance: low. For our ~2 s SmolVLA latency, a 1.7× speedup is insufficient to reach smooth real-time; switching to a small policy is a far larger lever (vla.simd: 34–60M ACT-class ≈10–100× faster).
+Decision impact:
+ - Q10 latency: token caching gives ≤1.7× on 7B VLAs with −0.3 to −1 pt success — weakens "keep the VLA and optimize inference" as the main fix — confidence L-M.

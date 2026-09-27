@@ -1,0 +1,18 @@
+# W3_TowardsEffectiveUtilizationofMixedQualit — Towards Effective Utilization of Mixed-Quality Demonstrations in Robotic Manipulation via Segment-Level Selection and Optimization (S2I) (2025, arXiv id not in text)
+Setup: Sim: RoboMimic MH (Lift, Can, Square; multi-operator mixed quality; 10–150 demos), BC-RNN (state) and DP (state/image), 5 seeds × 50 inits. Real: Flexiv Rizon + AG-95 gripper, 2× RealSense D435; tasks Tissue, Cup (1–2 cups), Pen (1–3 pens); 50 demos/task = 25 expert + 25 suboptimal (also 20/80 and 80/20 mixes); 3 expert demos used only as reference; policies ACT, DP (2D) and RISE (3D point cloud) with original hyperparameters, 1000 epochs, last checkpoint; 20 consecutive trials per setup. Absolute actions for DP/ACT/RISE.
+Claim: segmenting demos at gripper-change/zero-velocity keyframes, scoring each segment with a contrastive model trained on 3 expert demos, and trajectory-optimising + action-relabeling (not discarding) low-quality segments improves any downstream policy trained on mixed-quality data.
+Evidence (real, 50/50 mix, completion rate over 20 trials; Tissue / Cup-1 / Cup-2 / Pen-1 / Pen-2 / Pen-3):
+ - ACT 0 / 40 / 35 / 50 / 25 / 16.7 → ACT+S2I 25 / 55 / 45 / 60 / 40 / 23.3
+ - DP 10 / 35 / 30 / 50 / 30 / 26.7 → DP+S2I 65 / 55 / 50 / 70 / 50 / 36.7
+ - RISE 90 / 90 / 87.5 / 70 / 50 / 40 → RISE+S2I 90 / 95 / 95 / 90 / 80 / 60
+ - Other mixes (Table X): Tissue 20%exp-80%sub: ACT 0→15, DP 25→85, RISE 90→95; gains larger when more of the data is low quality.
+ - Sim (Tab. III, BC-RNN avg gain): discard-only demo-level +0.81%, segment-level +1.84%; full S2I +17.07%. DP image-based avg gain +5.59% best / +11.20% last-10.
+Ablations: trajectory optimisation applied to ALL data (no selection) → −27.48% (smoothing good demos hurts; detail table: −41.79% without relabel); segment vs demo-level selection consistently better; discarding low-quality data (L2D/PUBC style) underperforms keeping it with relabeled actions — suboptimal demos widen state coverage. UVD visual segmentation over-segments noisy demos; heuristic gripper/velocity keyframes more robust.
+Failure/limitations: authors: struggles with complex rotations. Critical read: 20 trials per cell, single seed on real; "suboptimal" demos were deliberately noisy (Fig. 9), which may be more extreme than a careful single operator; the 3D-vs-2D comparison (RISE ≫ ACT/DP) is across architectures, not a controlled ablation, and uses 2 D435 cameras.
+Conflicts: agrees with "What Matters in Learning from Offline Human Demos" (RoboMimic) that operator quality strongly affects BC; disagrees with filtering-only approaches (L2D/demo filtering) — here keeping and repairing is better than dropping. Aligns with RISE/DP3 papers that 3D policies are more data-robust in low-data real regimes.
+Relevance: high for 50–100 SO-101 teleop demos with jitter/backlash: noisy teleop segments hurt ACT/DP a lot (ACT 0% on Tissue). Cheap takeaways: (1) segment demos at gripper events; (2) smooth/relabel only the jittery segments, not the clean ones; (3) don't throw away mediocre demos. Real setup (RealSense, 50 demos, pick-place) is close to ours. RISE's big lead suggests RealSense depth → point cloud is worth trying.
+Decision impact:
+ - Q13 data quality: supports segment-level cleaning + relabeling of noisy demos over discarding — confidence M (real, 3 tasks × 3 policies, 20 trials).
+ - Q13 data quality: smoothing already-good demos hurts (−27%) — only fix bad segments — confidence M (sim).
+ - Q04 3D: RISE (point cloud) 70–90% vs ACT/DP 0–50% on same 50 mixed demos — supports 3D for robustness to noisy low-data — confidence L (uncontrolled comparison).
+ - Q01 action head: DP gains more than ACT from cleaned data (Tissue 10→65 vs 0→25) — ~ — L.

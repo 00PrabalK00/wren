@@ -1,0 +1,13 @@
+# W3_BeyondTaskSuccessBehavioralandRepresenta — Beyond Task Success: Behavioral and Representational Diagnostics for WAM and VLA (2026, arXiv n/a in text)
+Setup: evaluation-only study of 7 public checkpoints (VLAs: pi0 (LeRobot fine-tune), pi0.5, X-VLA; WAMs: Cosmos Policy (joint), LingBot-VA (sequential), FastWAM & VLA-JEPA (auxiliary)); LIBERO 4 suites × 50 trials/task (2,000 eps) and RoboTwin2.0 50 tasks (2,000 eps); single RTX 6000 Ada; sim only; SAE feature analysis.
+Claim: world-action models (future prediction) give smoother, more object-selective behavior than direct VLAs at similar success, but cost much more inference time.
+Evidence (LIBERO Table 1, success %): Cosmos 98.0, LingBot-VA 98.0 (LIBERO-10 only), FastWAM 95.3, VLA-JEPA 97.1, pi0 66.9, pi0.5 96.6, X-VLA 95.8. Jerk L2 lower for WAMs (e.g. LingBot 0.038 vs pi0 0.094; X-VLA 0.029 is lowest in that column as extracted — column alignment in the text is messy, treat per-metric claims as qualitative). Low-motion failure: pi0 9.3%, others ≤1.3%.
+Runtime (Table 3, p50 ms / effective Hz / GPU MB): Cosmos 956 / 16.8 / 9,762; FastWAM 1418 / 6.8 / 27,891; LingBot-VA 4701 / 3.5 / 24,130; VLA-JEPA 1588 / 4.0 / 5,462; pi0 194 / 217 / 8,631; pi0.5 100 / 71 / 9,124; X-VLA 329 / 29.9 / 7,089.
+Ablations: none (no controlled training). Different models differ in data, size, backbones — comparison is not controlled.
+Failure/limitations: authors: associative not causal; sim only; public checkpoints. My read: RoboTwin shows the opposite smoothness trend explained by low-motion failures; the "WAMs are smoother" claim is confounded by everything else in the models.
+Conflicts: agrees with PAD / other aux-future-prediction papers that future prediction helps; but here the auxiliary-only WAMs (cheap at inference) sit between VLAs and inference-time-imagination WAMs, i.e. training-only aux loss captures only part of the benefit — weak evidence.
+Relevance: low for design choices; useful reference numbers that even pi0/pi0.5 need ~8.6–9.1 GB GPU memory at inference (on RTX 6000 Ada), i.e. at/over our 8 GB budget, and that video-predicting WAMs are 1–5 s per chunk.
+Decision impact:
+ - Q09 auxiliary objectives: future-prediction models show better object selectivity/smoothness, auxiliary-only variants less so — weak support for aux future prediction — confidence L (uncontrolled, sim).
+ - Q10 latency: WAM inference 0.96–4.7 s p50 vs pi0.5 0.10 s; pi0/pi0.5 need 8.6–9.1 GB — weakens inference-time imagination and full VLAs on an 8 GB laptop — confidence M (measured numbers, different GPU).
+ - Q12 model size: pi0 family memory footprint ~9 GB at inference — weakens large VLAs for 8 GB GPU — confidence M.

@@ -1,0 +1,7 @@
+# W4_Visionbasedmanipulationfromsinglehumanvi — Vision-based Manipulation from Single Human Video with Open-World Object Graphs (ORION) (2024/25, arXiv 2405.20321)
+Setup: Franka + single RealSense D435; one human video (iPad RGB-D, YouTube, or Veo 2 generated) per task; 10 tasks (7 short, 3 long-horizon), 15 real trials each. Non-learned pipeline: open-vocab detection/segmentation + TAP keypoint tracking → object graphs at keyframes → object-centric point-flow retargeting + trajectory optimization.
+Claim: object-centric plans from a single video generalize across backgrounds, camera angles, layouts and new instances; avg 74.4% (RGB-D 66.7% avg, RGB-only 85.3% avg).
+Evidence: per task 60–93.3% (15 trials); Hand-motion-imitation baseline ≤20% (fails when layout differs); dense optical-flow baseline 66.7% on Mug but 0% on boat assembly (figure); robust to demo videos in very different visual conditions (10–11/15, no significant difference).
+Why little relevance: not a learned visuomotor policy — no evidence on action heads, chunking, encoders, model size or demo counts for BC. Only generic support that object-centric (object-relative) representations give viewpoint/background/instance robustness, consistent with OBEYED-VLA / HumanEgo / MT3. 15 trials per task.
+Decision impact:
+ - Q14 robustness: object-centric keypoint/pose representation ≫ hand/robot-motion imitation under layout/background/camera changes (≤20% vs 60–93%) — confidence L (non-learned, small n).

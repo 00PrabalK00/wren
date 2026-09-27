@@ -1,0 +1,19 @@
+# W4_PhysicallybasedLightingGenerationforRobo — Physically-Based Lighting Generation for Robotic Manipulation (RoLight) (2025, arXiv 2508.01442)
+Setup: xArm7, single external RGB camera (wrist cam only for auto-eval), 2 tasks (Pear pick-place with vacuum gripper; Square nut insertion), 200 human demos per task under white "Original" light. Policy: ResNet18 + MLP BC. Augmentation: pick 10 demos, relight each with 6 environment maps (inverse rendering of first frame → albedo/roughness/metallic/normal/depth, Disney BRDF render, then fine-tuned Stable Video Diffusion propagates lighting across the episode) → 260 episodes. Test: 6 unseen lights (Side shadows, Regional blue, Dim, pure Red/Green/Blue at 4600 lux), 20 trials each per task/method; metrics Reach (R) and Pick-and-place (PnP). 1000 real rollouts total.
+Claim: physically-based relighting of a few existing demos makes BC robust to unseen real lighting, beating color jitter and 2D relighting (IC-Light).
+Evidence:
+ - Averaged over both subtasks and tasks under the 6 unseen lights: Ours beats Crop (random crop only) by +38.75 pts, Crop+ColorJitter by +33.13, IC-Light-generated data by +41.88 (Table I cells too scrambled in extraction to quote individually).
+ - Qualitative per-condition: Crop collapses under Side/Regional (not Dim) and under RGB lights even for reaching; Jitter reaches reasonably but "consistently fails" final PnP in daily-use lights; IC-Light better only on RGB; Ours maintains reaching everywhere but struggles with PnP under extreme single-color 4600 lux light (hovering over object without grasping).
+ - Visual quality vs GT blue-LED episodes: LPIPS 0.3269 vs IC-Light 0.5274; SSIM 0.7351 vs 0.5359; temporal LPIPS 0.035 vs 0.121.
+Ablations:
+ - Material masking (Square, Dim, 10 trials, R/PnP): original 1.0/0.8; albedo masked 0.8/0; roughness masked 1.0/0; metallic masked 1.0/0.4.
+ - #relit source episodes (Square, Red light, reach, 10 trials): 10 → 0.9, 25 → 0.8, 75 → 0.8, 100 → 1.0 — 10 source demos suffice.
+ - Time: inverse rendering 10 min once; SVD propagation 20 s/episode (vs 10 h/episode frame-wise).
+ - SVD fine-tuned on synthetic only → cartoonish (qualitative).
+Failure/limitations: environment maps (32x16) too coarse for strong directional light/specular reflections; relies on env maps approximating the TEST lighting (they relight to the 6 evaluation conditions) → this is targeted adaptation, not general lighting invariance (authors say so). Critical: weak baseline policy (ResNet18-MLP, no chunking); single camera; 20 trials per cell.
+Conflicts: Color jitter's failure on PnP (while reaching OK) contrasts with papers where photometric augmentation suffices (usually with milder lighting shifts and pretrained encoders). Agrees with the general finding that policies are highly vulnerable to lighting.
+Relevance: Medium-high for our "breaks under new lighting" failure. Takeaways: (1) plain color jitter is insufficient for strong directional/colored light and shadows; (2) physically plausible relighting of only ~10 demos is enough to gain large robustness; (3) if we can photograph the target lighting (chrome ball) we can pre-adapt. A cheaper proxy for us: use RealSense depth + normals for simple shading/shadow augmentation, or add a few real demos under varied lamps. Pipeline needs H100-class SVD fine-tuning — heavy but offline.
+Decision impact:
+ - Q05 augmentation: physically-based relighting (10 demos x 6 lights) > color jitter by +33 pts and > IC-Light 2D relighting by +42 pts under unseen real lights — confidence M (1000 real trials, but test-matched env maps).
+ - Q14 robustness (lighting): crop-only BC collapses under side/regional/colored lighting; jitter recovers reaching but not grasping — lighting shift is severe and needs targeted data — confidence M.
+ - Q13 data: 10 relit source demos as effective as 100 (0.9 vs 1.0 reach) — few diverse-lighting samples suffice — confidence L.

@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+# per-run logs and camera frames (large; kept locally)
+policy_runs/
+policy.log
+recording.log
+# unrelated to Wren (LeKiwi base teleop)
+lekiwi_teleop.py
+.claude/

@@ -1,0 +1,12 @@
+# W3_OfflinetoonlineReinforcementLearningforI — Offline-to-online Reinforcement Learning for Image-based Grasping with Scarce Demonstrations (Simplified Q) (2024/25, arXiv 2410.14957)
+Setup: Real UR10e with vacuum suction, image-based grasping of a rice bag in a bin (xy velocity actions), 50 single-operator teleop demos, offline 100K steps then 200 online episodes (<2 h, 20 min interaction); 50 grasp attempts per eval, 3 seeds for RL. Also robomimic lift/can low-dim sim. RL uses a frozen HILP-pretrained encoder; BC trained end-to-end.
+Claim: removing the target network and adding an NTK-style regularizer stabilizes O2O RL enough to reach >90% grasp success from 50 demos in under two hours, where BC fails.
+Evidence: offline-only real success: BC 34%, Simplified Q 24%, DR3 16%, CrossQ/SAC/SAC+LN 0%. BC data scaling (Fig 1 right, figure + text): ~35% with 50, 200 or 500 demos; only 500 demos + DrQ-style image augmentation exceeds 60%. Simplified Q online reaches ~70% within 200 episodes and >90% (abstract). Sim robomimic: BC beats all offline RL methods (Table 1).
+Ablations: encoder for O2O RL (Fig 5, figure only): frozen random encoder never improves; E2E and frozen-pretrained both improve; E2E reaches better asymptotic performance than frozen pretrained.
+Failure/limitations: suction grasping with 2-D velocity — much simpler action space than a 6-DoF gripper; BC baseline is a plain single-step policy (no chunking, no generative head), so "BC fails at 50 demos" is a weak-BC statement; requires reward/success detection and resets for online phase.
+Conflicts: Plateau of BC at ~35% from 50→500 demos without augmentation, then jump with augmentation, echoes DrQ/RAD/Diffusion Policy findings that random-shift augmentation is essential for image-based low-data learning; ACT/DP-style chunked policies typically do much better than 34% at 50 demos on simple grasps, so the BC baseline is weak.
+Relevance: Mainly a pointer that for single-step image BC, more demos without augmentation did not help, augmentation did. O2O RL on SO-101 is outside our current scope.
+Decision impact:
+ - Q05 augmentation: random-shift image augmentation was needed for BC to exceed ~35% even at 500 demos (500+aug >60%) — confidence L-M (real robot, 50 trials, but weak single-step BC; figure values)
+ - Q13 data quantity: 50→200→500 demos without aug gave no gain for single-step BC (~35%) — confidence L
+ - Q03 vision encoder: end-to-end encoder > frozen pretrained asymptotically in O2O RL; frozen random fails (figure only) — confidence L

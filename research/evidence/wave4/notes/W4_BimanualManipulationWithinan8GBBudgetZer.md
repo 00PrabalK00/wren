@@ -1,0 +1,18 @@
+# W4_BimanualManipulationWithinan8GBBudgetZer — Bimanual Manipulation Within an 8 GB Budget: Zero-Copy Sensing and Quantized ACT on an Entry-Level Jetson (2026, arXiv 2608.03938)
+Setup: Bimanual SO-101 (2 leader + 2 follower, 12-D joint actions), 1 head + 2 wrist USB RGB cams 640x480 @10 fps, 10 Hz control; 1 task (bimanual pick-and-place of deformable beanbag), 100 teleop demos at 10 Hz with varied beanbag pose; ACT 52.6M params (ResNet18, chunk 100, n_action_steps=100, no temporal ensembling) via LeRobot; DP = LeRobot default; trained on RTX 3070 batch 8; deployed on Jetson Orin Nano Super 8 GB; 20 real trials per ACT precision, 10 for DP.
+Claim: A full 3-camera SO-101 ACT pipeline fits on an 8 GB Jetson; ACT converges at its reference budget while DP does not; FP16/INT8 TensorRT preserve success.
+Evidence (Table III, same data/cams/splits): ACT FP32 19/20 (95%), FP16 TRT 18/20, INT8 TRT 19/20; Diffusion Policy 0/10 at 200k steps (near-stationary arm, marginal-action collapse) vs ACT 100k steps. Latency (Table IV, Orin Nano): FP32 PyTorch 114.02 ms mean / 144.73 p95; FP16 TRT 17.93 / 21.92; INT8 12.65 / 16.27. ACT loss 6.7 → ~1.5 by step ~1800. INT8 worst-dim action deviation 16.98% of range vs FP16 0.42% yet no success change. Zero-copy capture: peak single-core CPU 98→77%, max pipeline latency 117.3→101.5 ms, no frame drops either way.
+Ablations:
+ - Policy family (ACT vs DP, each at its LeRobot reference budget) → 95% vs 0%. Not step-matched, no DP hyperparameter sweep.
+ - Precision FP32/FP16/INT8 → 19/18/19 of 20 (no detectable difference).
+ - Execution horizon: n_action_steps=100 (10 s open-loop at 10 Hz!) amortizes 114 ms FP32 inference; per-step re-prediction (temporal ensembling) would be infeasible at FP32 on this device (8.77 Hz ceiling) but fine at FP16.
+ - TensorRT INT8 quantizes ResNet18 only; 0/145 transformer layers accepted.
+Failure/limitations: authors — n=20 (1 trial = 5 pts), single forgiving deformable task, DP undertrained not proven worse, no per-view camera ablation, engine build needs ~2.9 GB swap. My read: DP 0/10 with LeRobot defaults is a practical warning, not an architectural verdict; executing a whole 100-step (10 s) chunk open-loop succeeded only because the task is quasi-static — no perturbation/robustness testing; no lighting/object/camera shift.
+Conflicts: Chi et al. / many LeRobot users report DP works at 100–200 demos; the difference here is under-training at batch 8 with 3 cams and 12-D bimanual actions. Agrees with ACT's claim that 50–100 demos suffice with chunking. The long open-loop chunk contradicts ACT's recommendation of temporal ensembling, but only for smoothness, not success.
+Relevance: Very close to our setup (SO-101, LeRobot, 10 Hz, wrist + scene cams, 100 demos, 8 GB class device). Direct evidence that ACT (~52M) is the safe-to-converge baseline on our budget, and that FP16 TensorRT gives ~6x latency drop — our 2 s SmolVLA latency is a model-size problem, not hardware. Also: executing full chunks makes latency irrelevant but kills reactivity; chunk-boundary jerk not evaluated.
+Decision impact:
+ - Q01 action head: supports CVAE/L1 (ACT) over diffusion under limited training budget on SO-101 — confidence M (real, same robot, but DP untuned, n=10)
+ - Q12 model size: supports ~50M ACT as sufficient for SO-101 pick-place from 100 demos (95%) — confidence M
+ - Q10 latency: supports TensorRT FP16 (114→18 ms on Orin Nano) with no success loss; latency matters only if re-predicting often — confidence M
+ - Q06 chunking: long open-loop execution (100 steps @10 Hz) still 95% on quasi-static task — confidence L (no horizon sweep)
+ - Q13 data: 100 demos with pose variation → 95% for one deformable pick-place — confidence L

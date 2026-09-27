@@ -1,0 +1,17 @@
+# W3_BeyondAppearanceShiftsTaskSemanticAction — Beyond Appearance Shifts: Task-Semantic Action Calibration for VLA Models (BAS-VLA) (2026, arXiv n/a in text)
+Setup: frozen OpenPI-pi0.5 and OpenVLA-OFT (own OFT fine-tune) carriers; LIBERO-Object/Spatial/10 main (200–500 episodes per condition), LIBERO-Plus/PRO zero-shot; real robot = Songling PiPER single arm, 2 Orbbec RGB-D cams used as RGB only, 4 semantic-change cases × 80 trials/method. Compute 8× RTX 5880 Ada (48 GB). Calibration layer on the action output + preserving probe using text grounding + SAM 2 masks.
+Claim: VLAs drift under nuisance changes and fail to change behavior when instruction semantics change; a lightweight action-calibration layer over a frozen VLA fixes both.
+Evidence:
+ - Native (pre-method) robustness gaps, Table 1 (100 episodes each): OpenVLA-OFT LIBERO-Spatial perimeter clutter 98% → 65% (−33), margin noise 97% → 51% (−46); pi0.5 LIBERO-Object illumination change 98% → 89% (−9); target-object swap: pi0.5 still completes the OLD task 34% of the time (should be 0).
+ - Style shift Bowl-on-Ramekin (200 eps): baseline 42.0% → BAS-VLA 70.0%, clean 97.0 vs 97.5.
+ - LIBERO-Plus (light/background/noise/language, 4,800 rollouts): 54.8% → 77.9%; LIBERO-PRO 36.9% → 71.4%.
+ - Real PiPER changed-task completion (80 trials each): frozen 23.8/10.0/16.3/13.8% → BAS 58.8/38.8/65.0/45.0%.
+ - Easy swaps new-task success: BAS 68.5% vs frozen & random-residual <3%.
+Ablations: breaking core alone is the best deployment; full composition (core + preserving auxiliary) does not dominate it. Mask corruption: −2.0 pts at IoU ≥0.7, −18.5 pts with missed/random masks. Gate false activations 7.5% (clean)/8.0% (break); preserving false-negative 23.5%.
+Failure/limitations: Butter-Swap/Tomato-Swap (visually similar objects) remain hard. Latency cost: breaking core +47–53 ms p50; preserving/Full mode end-to-end p50/p95 924/1,048 and 972/1,112 ms (extra frozen-policy query + SAM 2). Real-robot chunk latency 345–421 ms p50, underrun rate 0.18–0.31. Critical read: heavy multi-GPU pipeline; the real-robot study only tests semantic changes, not appearance robustness; most numbers in LIBERO sim.
+Conflicts: consistent with LIBERO-Plus/PRO findings that fine-tuned VLAs largely ignore language and are brittle to layout/noise; illumination drop for pi0.5 is small (−9) compared with clutter/noise drops for OFT (−33/−46), suggesting pretrained-VLA fragility is more about clutter/noise than lighting in sim.
+Relevance: low-moderate. Not deployable on 8 GB GPU (SAM 2 + grounding + VLA, ~1 s). Useful as a warning: a fine-tuned VLA with a second object + language may execute the wrong (stale) task; the fix idea "mask to task-relevant objects" is related to segmentation-based augmentation/input masking.
+Decision impact:
+ - Q08 language: fine-tuned VLAs often ignore target-object changes in the instruction (pi0.5 still does old task 34%, real frozen changed-task success 10–24%) — weakens relying on language alone to discriminate 2 objects without paired data — confidence M.
+ - Q14 robustness: clutter/noise hurt fine-tuned OFT far more than illumination hurts pi0.5 (−33/−46 vs −9 pts), task-relevant masking probe recovers style shift 42 → 70% — supports object-centric masking — confidence L (sim, heavy pipeline).
+ - Q10 latency: SAM 2 / grounding probes cost ~1 s end-to-end — weakens runtime segmentation on a laptop — confidence M.

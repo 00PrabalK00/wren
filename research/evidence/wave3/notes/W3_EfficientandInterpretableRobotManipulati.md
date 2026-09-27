@@ -1,0 +1,3 @@
+# W3_EfficientandInterpretableRobotManipulati — Efficient and Interpretable Robot Manipulation with Graph Neural Networks (2021/22, Meta AI; arXiv id not checked)
+Setup/claim: GNN over a hand-specified object/goal graph (ground-truth poses) selects object + goal for a known PickAndPlace primitive; trained by IL on 5–20 demos; generalizes to more objects, sim→real on Franka block stacking.
+Not relevant: task-level symbolic/graph policy on privileged state with scripted motion primitives — no visuomotor learning, no evidence on action heads, encoders, chunking, cameras or visual robustness. No ledger entries.

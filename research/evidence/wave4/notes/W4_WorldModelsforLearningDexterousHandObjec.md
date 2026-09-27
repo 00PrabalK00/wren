@@ -1,0 +1,11 @@
+# W4_WorldModelsforLearningDexterousHandObjec — World Models for Learning Dexterous Hand-Object Interactions from Human Videos (DexWM) (2025/26, arXiv 2512.13644)
+Setup: Latent world model (frozen DINOv2 encoder, predictor 30M–450M "S–XL") conditioned on finger-keypoint actions, pretrained on EgoDex (829 h human egocentric) + DROID, fine-tuned on ~4 h of scripted exploratory RoboCasa data (Franka + Allegro). Control by MPC/CEM planning toward a goal image; no task demos. Eval: RoboCasa reach/place/grasp 50 trials each; real Franka+Allegro zero-shot grasping, 12 trials.
+Claim: a dexterous-action world model trained on human video + exploratory sim data plans unseen tasks and transfers zero-shot to a real robot, beating goal-conditioned Diffusion Policy.
+Evidence (Table 4): RoboCasa Reach / Place / Grasp — DP 16/8/0; DexWM w/o human pretraining 18/8/14; DexWM 72/28/58. Real grasp: DP 0%, DexWM 10/12 (83%). DP pretrained on same human data: 4% avg sim vs DexWM 53%.
+Ablations: hand-consistency aux loss: PCK@20 at 4 s 26 → 60, embedding L2 0.85 → 0.66; adding EgoDex to DROID improves RoboCasa rollouts; predictor 30M → 450M monotonically better (figure); encoders DINOv2/DINOv3/Web-SSL/V-JEPA2/SigLIP2 all work, DINOv2 strongest overall (figure only); exploration data: Lift-initialized 53% vs programmatic random reaching 49%.
+Failure/limitations: static scenes; needs 4 h exploratory sim data; image-goal specified; 12 real trials. Critical: DP baseline trained on non-task exploratory data (no successful demos) — not a fair comparison to BC with teleop demos; not a teleop-BC setting.
+Conflicts: none direct; supports "auxiliary structured target (hand keypoints) beats pure latent prediction" consistent with LIT pose-supervision finding.
+Relevance: low. Our setting is teleop BC with 50–100 demos on a parallel gripper; planning with a 450M world model + CEM is far from our latency budget. Only weak signal: DINOv2 features are a good frozen latent space for dynamics prediction.
+Decision impact:
+ - Q09 aux objectives: explicit keypoint-consistency aux loss much improves fine-grained predictions (PCK 26 → 60) — L (world-model setting, not policy).
+ - Q03 vision encoder: DINOv2 best frozen latent among DINOv3/SigLIP2/V-JEPA2/Web-SSL for WM planning (figure only) — L.

@@ -1,0 +1,17 @@
+# W4_DCODADiffusionforCoordinatedDualArmDataA — D-CODA: Diffusion for Coordinated Dual-Arm Data Augmentation (2025, arXiv 2505.04860, CoRL 2025)
+Setup: Sim: 5 PerAct2/RLBench bimanual tasks, 100 scripted demos/task, ACT (PerAct2 impl), 3 seeds x 25 test episodes. Real: 2x UR5 + Robotiq, 2 RealSense D415 wrist cams + front cam, GELLO teleop, ~32 demos/task, 3 tasks (Lift Ball, Lift Drawer, Push Block), 20 trials each; ACT and pi0-FAST (Gemma-2B LoRA, 150k steps). Joint-position actions.
+Claim: a latent diffusion model conditioned on camera pose perturbation synthesizes perturbed wrist views (both arms consistent) + IK-derived corrective joint labels; adding these (DMD-style recovery states) improves eye-in-hand bimanual BC.
+Evidence:
+ - Sim, wrist cams only (Table 1), ACT w/o aug → D-CODA: Lift Ball 56.0→73.3, Lift Tray 37.3→44.0, Push Box 36.0→56.0, Push Buttons 46.7→53.3, Straighten Rope 18.7→30.7. Bimanual DMD (per-arm independent): 50.7/13.3/32.0/48.0/13.0. ACT "more data" (+100 demos, no aug): 48.0/26.7/29.3/49.3/26.7 — i.e. MORE demos did not beat baseline on 3/5 tasks.
+ - Sim 3-cam: VISTA (3rd-person novel views) 61.3/2.6/76.0/1.3/26.7 vs D-CODA 77.3/34.7/58.7/34.7/48.0; adding overhead cam hurt ACT on high-precision tasks.
+ - Real (Table 2, 20 trials; column parsing from flattened text, verify): ACT w/o aug 15/7/15 → D-CODA 17/14/20 (Lift Ball/Lift Drawer/Push Block); pi0-FAST w/o aug 2/1/20 → D-CODA 12/1/20; VISTA 12/0/20. With ~32 demos ACT was more reliable than pi0-FAST.
+Ablations: (sim Lift Ball) replaced VQGAN encoder 53.3, no constrained perturbation sampling 57.3, full 73.3. Diffusion model generalization: zero-shot from other tasks 44.0, few-shot 10 demos 60.0, train on target 100 demos 73.3.
+Failure/limitations: wrist views only; perturbations must stay close to training distribution; pi0-FAST failures from large sudden actions (authors blame discrete tokens + OOD augmented states). Sim demos scripted; sim tasks simplified to help ACT; 20 real trials; heavy pipeline (diffusion NVS + SAM2 + IK).
+Conflicts: "more data doesn't always help" is at odds with standard scaling claims — likely because scripted sim data with near-duplicate trajectories adds little state coverage, whereas perturbation-recovery states add off-distribution coverage (consistent with DMD / DAgger literature). Third-person view synthesis (VISTA) hurting precision contrasts with viewpoint-augmentation papers that help camera-shift robustness — trade-off between invariance and precision.
+Relevance: Low-medium. Single-arm SO-101 with wrist cam could use the single-arm DMD variant for recovery-state augmentation, but needs training a view-synthesis diffusion model — too heavy for our budget. Transferable: ACT with ~32 demos beat fine-tuned pi0-FAST (2B) in low data real.
+Decision impact:
+ - Q05 augmentation: generative wrist-view perturbation + corrective labels improves ACT (sim +7 to +20 pts; real Lift Drawer 7→14/20) — confidence M (but expensive pipeline).
+ - Q13 data: +100 extra scripted demos gave no gain on 3/5 tasks vs augmentation giving gains → coverage/recovery states > raw count — confidence L-M (sim scripted).
+ - Q12 model size: with ~32 real demos, ACT (small) > pi0-FAST LoRA (2B) (Lift Ball 15 vs 2/20) — confidence M.
+ - Q01 action head: pi0-FAST discrete tokens produced sudden large actions on OOD states — weakens discrete tokens for low data — confidence L.
+ - Q11 cameras: adding overhead cam hurt ACT precision tasks in sim; wrist views key for precision — confidence L.

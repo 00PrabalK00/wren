@@ -1,0 +1,18 @@
+# W3_TubeDiffusionPolicyReactiveVisualTactile — Tube Diffusion Policy: Reactive Visual-Tactile Policy Learning for Contact-rich Manipulation (2026, arXiv 2604.23609)
+Setup: Sim: Push-T (state/image, 200 demos, 50 eval eps) + 3 Unreal-FEM visual-tactile dexterous tasks (UR5 + 20-DoF hand, 768-taxel tactile, top + wrist RGB; 150 demos/task, 50 eval eps). Real: Franka FR3 + Allegro hand, RealSense D405 wrist + D435F global, Digit360 fingertip tactile; jar opening and on-table reorientation; 25 eval episodes per method (real demo count not stated in text I found). Model: DP-style 1D U-Net (44.7M) with FiLM, 6 ResNet-18 encoders (2 vision, 4 tactile), 172.8M total. Inference on RTX 4080.
+Claim: one network does a few-step DDIM denoise at chunk start, then a learned streaming feedback flow updates every action step from fresh observations ("action tube"), giving reactivity inside a chunk and allowing only 2–3 denoising steps.
+Evidence:
+ - Push-T (Table II, avg/max score): state — DP-DDPM 93.2/93.8, DP-DDIM 91.8/93.9, FlowMatching 91.8/93.3, SFP 88.6/89.7, TDP-streaming-only 84.3/85.0, TDP 96.1/96.9. image — DDPM 76.0/77.5, DDIM 68.5/69.0, FM 65.3/68.3, SFP 73.3/74.8, streaming-only 77.1/77.7, TDP 82.0/85.6.
+ - Sim stable grasp (Table III): grasp/stable — DP-DDIM 88/60%, SFP 78/72%, streaming-only 72/44%, TDP 96/88%. Reorientation: DP 82%, SFP 80%, streaming-only 76%, TDP 90%.
+ - Dish cleaning (Table IV): DP DDIM-10 98.4% @72.9 ms; DP DDIM-2 5.3% @17.1 ms; TDP (2 DDIM) 98.0% @13.3 ms denoise + 6.5 ms/stream step.
+ - Real (Table V, 25 eps): reorientation DP 60% vs TDP 96%; jar opening DP 84% vs TDP 96%. Latency: DP 0.037 s; TDP denoise 0.008 s + stream 0.003 s; TDP >100 Hz vs DP ~25 Hz. Under pushes (thumb bent, jar moved) DP keeps executing stale chunk; qualitative.
+Ablations:
+ - Remove diffusion phase (streaming only): drops (Push-T state 96.1→84.3; stable grasp 88→44%) → pure local feedback drifts; chunk-level global generation needed.
+ - DDIM steps (Fig 5/6, figure): TDP competitive with 2 steps; DP at 1–3 steps 0% on stable grasp, needs 5–10. Real DP at 3 steps fails (Fig 9, qualitative).
+Failure/limitations: authors: naive concatenation of tactile; could use distillation for further speed. Critical read: gains attributed to reactivity are confounded with tactile input (not ablated without tactile); real demo count and chunk sizes (Ha/Hp) not given in text; real eval 25 episodes; dexterous hand, not a parallel gripper; the "DP" baseline executes chunks open-loop without temporal ensembling/RTC — no comparison with those common fixes.
+Conflicts: consistent with chunking literature that open-loop long chunks hurt reactivity to disturbances (ACT uses temporal ensembling for this); contrasts with work finding longer chunks help with noisy human demos — TDP's answer is to keep chunk-level generation but add per-step closed-loop correction.
+Relevance: moderate. We have no tactile and a simple pick-place; but the idea "cheap per-step correction head between chunk re-plans" addresses our chunk-boundary jerk and latency. Also a data point that DP with 2–3 DDIM steps collapses, so a diffusion head on our 8 GB laptop must keep ~10 steps or use a flow/1-step head.
+Decision impact:
+ - Q10 latency/smoothness: supports step-wise closed-loop refinement within a chunk; per-step 3 ms, >100 Hz — confidence M (real 25 eps, dexterous, tactile confound).
+ - Q06 chunking: weakens pure open-loop chunk execution under disturbances (real reorientation 60→96%) — confidence M.
+ - Q01 action head: DP needs >=5–10 DDIM steps (DDIM-2 dish cleaning 5.3% vs 98.4% at 10); plain flow matching was lower than DDPM on image Push-T (65.3 vs 76.0) — confidence L-M (sim).

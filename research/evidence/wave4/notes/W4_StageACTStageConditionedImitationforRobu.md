@@ -1,0 +1,16 @@
+# W4_StageACTStageConditionedImitationforRobu — StageACT: Stage-Conditioned Imitation for Robust Humanoid Door Opening (2025, arXiv 2509.13200)
+Setup: Unitree G1 humanoid + Dex-3 hands, 1 task (door opening, push door, spring latch); 135 successful demos (>8 h teleop, 2 offices, 2 doors, different lighting/background/dynamics); single head-mounted RealSense RGB 480x640 (no wrist cam, no depth used); 29-D upper-body joint state; action = 29 target joint positions + 3-D walk velocity; ACT (CVAE, chunk 100 steps ≈3 s, temporal ensembling), ACT default hparams; RTX 5090, ~4 h training, 30 Hz inference. Eval on an unseen third door (different appearance + dynamics), randomized start pose; 20/10/20 trials.
+Claim: conditioning ACT on a one-hot human-annotated task-stage vector disambiguates visually identical states in a long-horizon, partially observable task and enables stage-prompted recovery.
+Evidence (Table I, unseen door): ACT 20% SR (27.5 s), ACT + 5-frame observation history 10% SR (22.2 s, only 10 trials), StageACT 55% SR (20.7 s). Upper-body tracking error 0.44 / 0.52 / 0.34.
+ Per-stage (Table II): Approach stage S2 — ACT 7/20, ACT+history 5/8, StageACT 17/19. Rotate S3 (hardest): 6/7, 1/5, 12/17.
+Ablations:
+ - Stage input at test time (Table III): human GT stage 60% success; constant-zero stage 0%; random stage 0% → policy truly relies on the signal (so it requires a stage source at test time — here a HUMAN issues it).
+ - Adding 5-frame observation history to ACT: 20% → 10% (fewer trials, 10) — history did NOT help, consistent with copycat/causal-confusion concerns.
+ - Stage prompting enables retries (S3 fail → prompt S1/S2) and out-of-sequence execution (S1→S4→S5); qualitative only.
+Failure/limitations: stage labels at test time come from a human operator (not an automatic classifier) — the 55% is effectively "human-in-the-loop high-level". Very few trials (10–20), single task/door type, no statistical tests; baseline failures are mode blending (lifting both arms) and skipping stages. Failed demos were removed so baselines never learned recovery.
+Conflicts: agrees with ACT paper and other reports that naive frame-stacking history hurts or doesn't help small BC policies (copycat); contrasts with memory-based papers that claim gains from learned history — difference is that here the "memory" is an explicit low-dim oracle signal, not raw frames.
+Relevance: our pick-place pumpkin task is short and mostly Markovian (gripper state + scene visible), so stage ambiguity is minor; but gripper-closed/open state already acts as an implicit stage. Useful if we add multi-step tasks: a low-dim phase/subtask token (or language subtask) is a cheaper fix than frame history. ACT with RealSense RGB-only, 30 Hz, chunk ≈3 s with TE worked on real hardware.
+Decision impact:
+ - Q07 history/memory: raw 5-frame history weakens (20→10% SR); explicit low-dim stage conditioning supports — confidence L (10–20 trials, human-provided stage at test time).
+ - Q08 conditioning: one-hot subtask conditioning concatenated to inputs is effective and prompt-able — confidence L.
+ - Q06 chunking: ACT chunk ≈3 s + temporal ensembling used successfully at 30 Hz (no ablation) — confidence L.

@@ -1,0 +1,11 @@
+# W3_IdentifyingExpertBehaviorinOfflineTraini — Identifying Expert Behavior in Offline Training Datasets Improves Behavioral Cloning of Robotic Manipulation Policies (2023, arXiv 2301.13019)
+Setup: Real Robot Challenge III, real TriFinger robots (6-robot cluster), cube push and cube lift, offline datasets from scripted/RL policies (expert vs mixed-skill), LOW-DIM state (no images), MLP BC; 15 real evaluation episodes per task; score = episodic return. Not human teleop.
+Claim: plain BC on expert data beats offline RL; on mixed-quality data, filtering out non-expert episodes with a semi-supervised classifier + symmetry-based geometric augmentation (then fine-tune on raw data) recovers expert-level BC.
+Evidence (Table II, return mean ± SD, 15 eps): BC push/expert 626, push/mixed 497, lift/expert 928, lift/mixed 489 (avg 635); TD3+BC avg 694; PLAS 699; CRR 652; Gaussian state-noise aug (C-Aug) 622; filtering only (Ablation 1) 772 (lift/mixed 489→917); filter + symmetry aug no fine-tune (Ablation 2) 831; full 867 (lift/expert 1130, lift/mixed 1038). Competition: 1st place avg 784.
+Ablations: filtering mixed data → lift/mixed +428 return; symmetry (rotation of arena) augmentation +59 avg; Gaussian noise on state −13 avg (hurts); random 10%/50% subsets of mixed data no help (541/623 push).
+Failure/limitations: state-based, scripted-policy data, huge SDs (±200–400 on lift) with 15 episodes; filter threshold hand-tuned. Critical read: evidence is about data-quality curation, transferable only loosely to human teleop.
+Conflicts: consistent with robomimic finding that BC degrades on mixed-quality human data (MH vs PH) and with data-curation work showing removing poor demos helps.
+Relevance: low-moderate. Lesson for us: bad/hesitant teleop episodes should be filtered (or down-weighted) rather than kept; physically-valid geometric augmentation helps while naive noise injection on state does not.
+Decision impact:
+ - Q13 data: supports curating/filtering low-quality demos (lift/mixed BC 489 → 917 after filtering) — confidence L-M (state-based, scripted data, 15 eps, large variance).
+ - Q05 augmentation: Gaussian state noise hurt (635→622) while symmetry-consistent augmentation helped (772→867) — confidence L.

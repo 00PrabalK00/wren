@@ -1,0 +1,15 @@
+# JetsonPI — Jetson-PI: Towards Onboard Real-Time Robot Control via Foresight-Aligned Asynchronous Inference (Yang et al., PKU, 2026, arXiv 2607.12659; code PKU-SEC-Lab/Jetson-PI)
+Setup: π0/π0.5 (and XR-1 on real robot) on low-power Jetson Orin/Thor. (1) Foresight-aligned correction: small module predicts FUTURE VLM latent conditioned on committed actions, so the action expert predicts from the future time step; (2) confidence-based scheduling: when predicted-latent confidence is high, skip the VLM and run only the action expert (VLM invoked at grasp/place moments); (3) llama.cpp-based engine with CUDA graph reuse, GPU-resident KV/intermediate buffers, unrolled flow loop. LIBERO π0.5, Δ=1–9, one model for all Δ; real: X2-W robot, 3 cams 224², cloth folding, 15 Hz, XR-1 on Orin.
+Evidence:
+ - Latency breakdown (Table 1, total ms, two VLAs): Orin-30W 2268.8 / 2289.4; Orin-50W 1403.0 / 1420.8; Thor 447.9 / 457.9; RTX A6000 116.1 / 128.2; RTX 4090 69.5 / 76.4. On the SAME Orin, 30 W vs 50 W power mode = 1.6× latency (ViT 322→152 ms, action expert 1090→518 ms).
+ - Systems ablation (Table 4, Orin, π0.5): naive 1420.8 ms (0.70 Hz); +schedule opt reaction 674.9 ms (1.48 Hz); +CUDA-graph reuse 476.1 ms total, reaction 227.0 ms (4.41 Hz); +buffering & flow unroll 412.9 ms, reaction 165.1 ms (6.06 Hz). Graph reuse alone ~2.96× reaction-time cut. vs vla.cpp (893 ms on Orin): 5.41× control frequency.
+ - LIBERO-Spatial SR vs Δ=1…9: VLASH 98.8/97.5/94.4/92.5/84.3/74.4/51.3/46.7/30.1 (avg 74.4); RTC 97.1/95.4/94.5/92.5/91.2/91.7/91.7/90.9/88.8 (92.6); Ours 97.7/97.1/97.1/96.7/95.9/97.0/97.0/97.2/97.0 (97.0); +Sched avg 97.4. Sync 97.3. Averaged over 4 suites: +14.8 over VLASH, +3.9 over RTC; at Δ=9 +45.6 / +7.0.
+ - Real (Fig. 7, figure only): near-4090 accuracy on Orin; clear gain over naive async.
+Ablations: confidence threshold θ trades VLM calls vs accuracy (figure); larger execution horizon L lowers success (longer reaction time).
+Failure/limitations: VLA-scale; real results figure-only single task. Critical read: VLASH collapses at large Δ here (30.1 at Δ=9), unlike AsyncInferenceStudy's oracle-state VLASH which stayed flat — VLASH's state-forwarding alone degrades once Δ is large relative to motion.
+Conflicts: agrees with FutureRTC (predict future visual latent) that state-only forwarding is insufficient at large delay; RTC holds up better than VLASH at large Δ on LIBERO here (contrasts VLASH paper).
+Relevance: HIGH for our latency diagnosis: (a) power mode alone moves latency 1.6× on the same chip — consistent with our power-saver observation; (b) CUDA graphs / static buffers / unrolled denoise loop are pure engineering wins (~3× on Orin); (c) caching VLM features and re-running only the action expert between VLM calls is a proven way to raise the action rate.
+Decision impact:
+ - Q10 latency: fix power mode + CUDA graphs/torch.compile + static KV buffers before model changes — M/H (measured systems numbers).
+ - Q10 async: at large Δ, future-latent prediction > state forwarding (VLASH) — M (sim LIBERO).
+ - Q10 scheduling: run the action expert more often than the VLM (reuse cached VLM KV) — M.

@@ -1,0 +1,26 @@
+# RT-1 — RT-1: Robotics Transformer for Real-World Control at Scale (2022, arXiv 2212.06817)
+Setup: real Everyday Robots mobile manipulators; ~130k demos, 13 robots, 17 months, 744 instructions (e.g. pick 130 instr., move-near 337); one head camera, 300×300 input; 6-frame image history; 35M params (FiLM-EfficientNet-B3 16M ImageNet-pretrained, identity-initialized FiLM from Universal Sentence Encoder embedding → 81 tokens/img → TokenLearner 8 tokens/img → 48 tokens → 8-layer decoder-only transformer 19M); actions discretized 256 bins/dim (7 arm + 3 base + mode), cross-entropy; 3 Hz control, ~15 ms network inference (budget <100 ms). >3000 real trials total. Eval: >200 seen instructions, 21 unseen instructions, 30 distractor tasks, 22 background tasks, 3 kitchens.
+Claim: a compact tokenizing transformer with early language fusion (FiLM) absorbs large diverse data and generalizes to new instructions, distractors, backgrounds.
+Evidence (Table 2, success %, all models trained on same RT-1 data): seen / unseen / distractors / backgrounds — Gato(37M) 65/52/43/35; BC-Z (ResNet FiLM, no history, continuous) 72/19/47/41; BC-Z XL 56/43/23/35; RT-1 97/76/83/59. Realistic kitchen (Table 3) All/L1/L2/L3: RT-1 70/88/75/50; BC-Z XL 55/63/75/38; Gato 30/63/25/0.
+Ablations (Table 13; Δ vs full RT-1; seen / unseen / distractors / backgrounds; inference ms):
+ - w/o history (6 frames → 1): 82 (−15) / 62 (−14) / 50 (−33) / 59 (+0); 15 ms. Authors: "Adding history has an impact primarily on generalization to distractors." (Easy/medium/hard distractor split exists in table; column alignment in extracted text is ambiguous — treat per-level numbers as uncertain.)
+ - continuous Gaussian actions instead of discrete bins: 68 (−29) / 43 (−33) / 37 (−46) / 35 (−24).
+ - w/o ImageNet pretraining: 84 (−13) / 43 (−33) / 60 (−23) / 41 (−18).
+ - autoregressive action conditioning: 85 (−12) / 71 (−5) / 67 (−16) / 65 (+6); 36 ms (>2× slower) → dropped.
+ - w/o Transformer: 86 (−13) / 62 (−14) / 67 (−16) / 59 (+0).
+ - smaller model (text says 35M→21M in one place, 31M→25M in another): 89 (−8) / 62 (−14) / 77 (−6) / 53 (−6).
+ - identity-initialized FiLM better than naive FiLM insertion (qualitative, no number).
+ - TokenLearner 2.4× speed-up, token reuse across overlapping windows 1.7× speed-up.
+Data ablations (Table 7; seen / all-generalization / unseen / distractors / backgrounds): 100% data 97/73/76/83/59; 51% (≤200 ep/task) 71/50/52/39/59; 37% (≤100 ep/task) 55/46/57/35/47; 22% (≤50 ep/task) 59/29/14/31/41; 97% data but 75% of tasks 86/54/67/42/53 → removing 25% of tasks ≈ halving data for generalization: diversity > quantity.
+Checkpoint selection (App. C.3): real-to-sim eval (551 tasks in sim + RetinaGAN) used for model selection; sim success ordering "directionally correlated" with real ordering (qualitative, no correlation number). They do not rely on validation loss.
+Failure/limitations: huge data regime (130k demos); single-arm-mounted head camera, no wrist cam; 3 Hz; limited dexterity; generalization only to new combinations of seen concepts; background robustness only 59%. Ablations are single training runs.
+Conflicts: history helps here (+15 seen, +33 distractors) while BAKU/Copycat/Octo-style small-data results find history neutral or harmful. Differences: RT-1 predicts ONE step (no action chunking) at only 3 Hz from a head camera on a mobile base (partial observability: arm occludes, gripper state unclear), and has 130k demos, which dilutes copycat shortcuts. Discrete-bin > Gaussian agrees with robomimic (GMM > deterministic) and ACT/BAKU (multimodal heads on human data). FiLM early fusion agrees with BAKU and HULC.
+Relevance: For SO-101 language conditioning with 2 objects, RT-1's recipe (frozen sentence encoder → identity/zero-initialized FiLM into a pretrained CNN) is the most proven cheap mechanism, and zero-init FiLM avoids destroying pretrained features. TokenLearner-style token reduction is a useful latency trick on 8 GB. History benefit here is under conditions (no chunking, 3 Hz, huge data) unlike ours. Data table at ≤50 episodes/task shows generalization collapse (unseen 14%) even with task diversity — our 50–100 demos will generalize only near the training distribution.
+Decision impact:
+ - Q08 language: supports frozen sentence embedding + zero-initialized FiLM into pretrained CNN (early fusion) — confidence M (no direct FiLM-vs-late-fusion ablation; inferred from Gato comparison).
+ - Q07 history: supports short history (6 frames) for single-step, non-chunked, low-rate policies with big data (−15 seen, −33 distractors without) — confidence M; weak transfer to chunked small-data policies — L.
+ - Q01 action head: supports multimodal (discretized) over unimodal Gaussian (−29 seen, −33 unseen) — confidence M/H.
+ - Q03 vision: supports ImageNet-pretrained encoder (−33 unseen, −18 backgrounds without) — confidence M/H.
+ - Q13 data: supports diversity over quantity (75% tasks ≈ 51% data); ≤50 ep/task → unseen 14% — confidence M/H.
+ - Q10 latency: TokenLearner (2.4×) and caching per-frame tokens (1.7×); autoregressive actions 2× slower for no gain — confidence M.
+ - eval/checkpoint: real-to-sim eval ordering used for model selection instead of loss — confidence L (qualitative).

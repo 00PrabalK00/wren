@@ -1,0 +1,16 @@
+# W3_RoboticTableTennisACaseStudyintoaHighSpe — Robotic Table Tennis: A Case Study into a High Speed Learning System (2023/24, arXiv id not in text)
+Setup: ABB IRB 120T/1100 arm + Festo 2-DoF gantry (8 DoF), 2 stereo 125 FPS global-shutter cameras, 27k-param temporal-conv ball detector on raw Bayer images + Kalman filter; state-based policies (≈1k-param gated dilated CNN over last 8 joint+ball states, velocity actions at 100 Hz; 13M LSTM at 60 Hz also works) trained with ES (BGS) in PyBullet, zero-shot sim-to-real; real eval 3×50 episodes, return max 2.0.
+Claim: systems-level lessons for high-speed learned control: measure and model latency per component, anchor sim distributions to reality, prefer accuracy up to a latency/framerate threshold, interpolate/filter observations, task-space actions transfer across morphology.
+Evidence:
+ - Latency modelling: measured latency in sim → zero-shot 1.83/2.0; 50% of measured → 1.33; 0/20/150% "very poor" (one lucky 0% policy 1.54). Catching task: wrong-latency sims 0–10% catch; the "150%" config matched the true (mis-set) latency best.
+ - Perception degradation (real): flat performance until ~50 FPS or ~150 ms added latency, then collapse; zero-mean noise ±8 cm minor effect; a 4 cm bias → −36% reward (~80% drop in return rate).
+ - Physical params: ball restitution +2% → −25%; table restitution +8% → −36%; removing table-restitution randomization −14%.
+ - Task-space (5-D paddle pose, position control) trains faster than joint-space velocity policies; transfers to modified pose / 2 frozen joints with small loss; new robot morphology recovered via a manual 7 cm + 0.2 rad residual — impossible in joint space.
+Ablations: listed above (latency, ball distribution width, noise type, physical params, BGS vs ARS).
+Failure/limitations: no spin modelling; measured physical params worse than tuned (errors compensating each other). Critical read: state-based RL with privileged ball tracking — no visuomotor imitation learning, no demos; relevance to our IL pipeline is only via systems lessons.
+Conflicts: task-space benefit echoes action-space studies favouring EE space for transfer; but for IL on SO-101 (cheap servo, imprecise kinematics) joint space is usual — this paper's argument relies on accurate industrial kinematics.
+Relevance: low-moderate. Directly applicable lessons for our latency/jerk problem: (1) instrument every stage (camera capture, transport, inference, servo command) and log timestamps; (2) interpolate observations to a common timestamp and smooth/filter; (3) policies tolerate latency until a threshold, then collapse — measure where ours is; (4) biased (systematic) errors like a shifted camera hurt much more than zero-mean noise — consistent with our "slightly moved camera" failure.
+Decision impact:
+ - Q10 latency: model/measure real per-component latency; mismatch between train-time and deploy-time latency collapses performance (1.83 vs 1.33 at 50%) — confidence M (real, 3×50 episodes, but RL/state-based).
+ - Q14 robustness: systematic bias (4 cm) ≫ zero-mean noise (±8 cm) in harm — supports calibrating/augmenting for camera extrinsic shift — confidence L (different modality).
+ - Q02 action space: task-space position actions train faster and transfer across morphology vs joint-velocity — confidence L (RL, industrial arm).

@@ -1,0 +1,22 @@
+# W4_LatentActionasIntentionEnablesEfficientF — Latent Action as Intention Enables Efficient Future Imagination for World Action Models (LAWA) (2026, arXiv 2608.24882)
+Setup: World-action model built on a pre-trained video Diffusion Transformer (Fast-WAM style) + latent-action expert + action expert with structured joint attention; flow matching for all branches. Latent-action tokenizer (ViPRA-style, DINOv2 features, VQ codebook, forward decoder, SAM2-mask auxiliary head) pre-trained on action-free robot + egocentric video (~20% robot). At inference the future-video branch is dropped; latents + action chunk are jointly denoised. Sim: RoboCasa 24 tasks (few-shot 100 demos/task; full 1000/task), 50 trials/task; LIBERO-Plus zero-shot perturbations. Real: xArm7, RealSense D435 base view + 2 fisheye wrist cams, 4 tasks (Gear, Battery assembly; Block, Laboratory long-horizon), 200 demos/task (also 25%=50, 50%=100), 20 trials. Latency on A800. Parameter count not given in main text (video DiT scale — large).
+Claim: predicting compact latent actions ("intentions") as an auxiliary future representation at test time recovers the generalization of full video-prediction WAMs at ~43% lower latency and beats video-co-training-only (Fast-WAM).
+Evidence:
+ - RoboCasa few-shot/full: LAWA 65.6/80.8; Joint-WAM 64.1/78.8; Fast-WAM 56.0/76.3; DIAL few-shot 58.3 (per text: LAWA exceeds DIAL by 7.3). VLA baseline cells are flattened/ambiguous; only LAWA/WAM rows trusted.
+ - LIBERO-Plus zero-shot total: LAWA 74.4, Joint-WAM 70.4, Fast-WAM 60.0, OpenVLA-OFT 69.6, pi0 53.6, pi0-FAST 61.6. Camera perturbation: LAWA 69.2 vs Fast-WAM 24.9 vs Joint-WAM 47.2 (OFT 56.4, pi0 13.8). Noise: 85.5 vs 58.0. Light: 96.2 vs 89.2. Background: 64.5 vs 62.3.
+ - Latency per chunk (A800): Fast-WAM 196.5 ms, LAWA 338.5 ms, Joint-WAM 593.1 ms.
+ - Real (avg over 4 tasks, 20 trials each): 25% data (50 demos) LAWA 40.0 vs Fast-WAM 8.8; 50% (100 demos) 56.3 vs 20.0; 100% (200 demos) 67.5 vs 33.8. Long-horizon Block/Lab at 50 demos: 45/30 vs 0/0.
+Ablations:
+ - Inference perturbation of latent-action state: 80.8 -> 52.2 (Gaussian σ=1), 56.4 (temporal shuffle) -> action expert actually uses the latent intention.
+ - Egocentric action-free pretraining (few-shot/full): Fast-WAM 54.5->56.0 / 74.6->76.3; Joint-WAM 63.1->64.1 / 78.3->78.8; LAWA 59.7->65.6 / 76.3->80.8. Without ego pretraining LAWA trails Joint-WAM.
+ - Ego video fraction 10%->100%: LAWA 61.6->65.6 few-shot, 77.2->80.8 full; Fast-WAM +1.1/+1.0.
+ - Components (Table 6): base 54.5/74.6; +LA 59.7/76.3 (+5.2/+1.7); +EP 64.8/79.3; +flow aux 63.5/78.6 (flow hurts by 1.3/0.7); +mask aux 65.6/80.8 (+0.8/+1.5).
+Failure/limitations: Main comparisons are self-implemented matched baselines (Fast-WAM†, Joint-WAM†) — author-controlled. Real eval 20 trials per task per condition. Model is a video-DiT WAM (large; 338 ms on A800) — well beyond an 8 GB laptop. Appendix truncated (param counts, real details missing).
+Conflicts: Fast-WAM's claim that video co-training alone suffices (no test-time imagination) is contradicted here, especially OOD camera shifts (24.9 vs 69.2). Agrees with auxiliary-future-prediction literature (Q09) that future modeling helps most in low-data/OOD. Flow-prediction auxiliary hurt slightly vs mask, contradicting Motus's choice.
+Relevance: Moderate/conceptual. For 50–100 demos, a future-intention auxiliary (predicting latent transitions jointly with actions) gave large real-world gains (40 vs 8.8 at 50 demos) and big camera-viewpoint robustness in sim. A small-scale analogue (latent-action tokens as auxiliary targets for a small flow policy, tokenizer trained on our own + public video) is plausible, but the evidence is on a large video-DiT backbone; unclear if it transfers to a ~50M policy.
+Decision impact:
+ - Q09 auxiliary objectives: supports predicting future latent actions jointly with the action chunk (test-time used) over video-co-training-only — confidence M (sim large + real 4 tasks x20 trials; author-implemented baselines)
+ - Q14 robustness: future-intention pathway strongly improves camera-viewpoint shift (LIBERO-Plus camera 69.2 vs 24.9 Fast-WAM) — confidence L-M (sim only)
+ - Q13 data quantity: at 50 real demos/task, LAWA 40% vs Fast-WAM 8.8%; both far from saturated at 200 (67.5%) — confidence M
+ - Q10 latency: 338 ms/chunk on A800 — infeasible for 8 GB laptop — confidence M
+ - Q05/Q13 action-free egocentric video pretraining helps only when paired with the latent-action pathway (+5.9 few-shot vs +1.5 Fast-WAM) — confidence L

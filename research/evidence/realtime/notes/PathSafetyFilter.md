@@ -1,0 +1,12 @@
+# PathSafetyFilter — From Demonstrations to Safe Deployment: Path-Consistent Safety Filtering for Diffusion Policies (PACS) (2025/26, arXiv 2511.06385, TUM)
+Setup: pretrained DP / VLA producing joint-delta action chunks; chunk integrated into a smooth intermediate trajectory; a shield runs at 1 kHz using set-based reachability analysis (robot reachable occupancy with bounded tracking error; object/human occupancy with bounded sensor delay and measurement error). Constraints: speed & separation monitoring (SSM: stop before any contact) or power-and-force limiting (PFL: contact allowed below energy threshold). Response: PATH-CONSISTENT BRAKING — slow down or stop ALONG the intended trajectory rather than deviating. Sim Robomimic (Lift, Can, Square; 100 rollouts) with dynamic obstacles; 3 real human-robot interaction tasks.
+Claim: reactive filters (CBFs, action modification) push the policy into OOD states and kill task success; braking along the policy's own path keeps it in distribution with formal safety.
+Evidence:
+ - Task success vs CBF: up to +68% (sim) and +37% (hardware); integrating the chunk into an intermediate trajectory rather than filtering actions one-by-one: +28%. (Abstract/intro numbers; Table I per-task values: unfiltered operational-space control avg 0.91 unsafe baseline; CBF avg far lower — extraction garbled beyond "0.11" for CBF on first task.)
+ - Real-time: reachability verification at 1 kHz.
+Ablations: single-action vs chunk-trajectory shielding; SSM vs PFL.
+Failure/limitations: needs object/human state measurements (tracking) and robot dynamics bounds; braking-only means it cannot actively avoid; formal guarantees need a torque-/impedance-controlled arm with known tracking error bounds.
+Conflicts: consistent with ActFovea (W3) where naive action clipping/smoothing cut clean success ~11 pts, and with LPB/Rewind-IL philosophy: keep the policy on the demo manifold.
+Relevance to SO-101: formal reachability on Feetech servos is overkill, but the design principle transfers: the reflex layer should SCALE TIME (slow/pause along the planned path: time-scaling of the chunk) rather than bend the path. Cheap to implement: joint-limit/workspace/velocity check on the interpolated chunk, and on violation or monitor alarm, freeze or slow the playback clock.
+Decision impact:
+ - Safety/reflex layer = path-consistent time-scaling (slow/stop), not action modification — SUPPORTED — M.

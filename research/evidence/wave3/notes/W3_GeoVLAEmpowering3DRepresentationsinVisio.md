@@ -1,0 +1,18 @@
+# W3_GeoVLAEmpowering3DRepresentationsinVisio — GeoVLA: Empowering 3D Representations in Vision-Language-Action Models (2025, arXiv 2508.09071)
+Setup: Prismatic-7B VLM (OpenVLA init) for RGB+language + separate from-scratch point encoder (PEN: large-kernel conv tokens + RoPE-3D, point cloud in END-EFFECTOR frame, output = the EE-anchor token) + DiT diffusion action head with static-routed MoE (random modality dropout), chunk 16, delta EE actions. 8xA100, ~20 h. No data augmentation. LIBERO: single main cam + depth (no wrist, no proprio), 50 eps/task eval; ManiSkill2 5 tasks, 20 eps. Real: WidowX-250s + RealSense D435i third-person at ~0.8 m, 8 tasks, 10 trials each; demo counts NOT reported.
+Claim: adding a dedicated EE-centric point-cloud branch to a VLA (without disrupting the VLM) improves precision and robustness to 3D shifts (height, scale, viewpoint).
+Evidence:
+ - LIBERO avg (5 suites): GeoVLA 97.7 vs OpenVLA-OFT 95.3 (with wrist+proprio), pi0 94.2, CogACT 93.2; Long 96.6 vs 90.7 (OFT).
+ - ManiSkill2 avg: GeoVLA 77 vs CogACT 69, Dita 66, OpenVLA 27; PickClutterYCB 45 vs 25 (CogACT).
+ - Real 8 tasks (Table 4): OpenVLA 20.0, pi0 57.5, CogACT 76.3, GeoVLA 86.3 (basic tasks 95.0, 3D-aware 77.5). Put Hairclip (black on black): CogACT 70 vs GeoVLA 80; pi0 0.
+ - Camera viewpoint shift (Table 7, Stack Block, base/15°/30°/45°): pi0 50/50/40/30; CogACT 80/60/40/0; GeoVLA 90/90/80/70 (note: training included other tasks seen from a side camera).
+ - Basket height (L2/L1/Base/H1): CogACT 20/30/60/20; GeoVLA 50/70/90/60. Doll scale (S1/Base/L1/L2): CogACT 70/70/40/50; GeoVLA 70/70/80/80. Remove mat (lower carrot): pi0 60, CogACT 10, GeoVLA 50.
+ - Appendix Table 9 (GeoVLA only): no change 93.3, background change 80.0, lighting change 73.3 (avg of 3 tasks, 10 trials).
+Ablations (LIBERO avg): point encoder MLP (DP3-style) 95.8, PointNet 95.2, PEN 97.7; anchor token max-pool 96.3, mean 95.9, EE token 97.7; 1D PE 95.4 vs RoPE 97.7; no-MoE 96.0, dynamic routing 97.3, static routing 97.7. (All within ~2 pts on a saturated benchmark.)
+Failure/limitations: no RGB-only ablation of the SAME architecture (baselines are different VLAs), so the 3D gain is confounded with the DiT head/model; 10 trials per real cell; demo counts not given; 7B model; lighting change still costs 20 pts even with depth.
+Conflicts: Agrees with iDP3/DP3-family and correspondence (DD-3D) evidence that 3D input improves spatial extrapolation (height, viewpoint). But the MLP (DP3) encoder already gives 95.8 on LIBERO — the elaborate encoder adds little. Contrasts with papers showing point-cloud policies degrade with noisy real depth; here EE-frame points + anchor token seem to work with D435i.
+Relevance: Moderate. Same sensor (RealSense third-person). Suggests that for "slightly moved camera" robustness, depth->point cloud expressed in the robot/EE frame (needs extrinsic calibration) helps a lot (45° shift: 70% vs 0% for RGB CogACT). Requires camera-robot calibration; for SO-101 EE frame via forward kinematics is available. Model too big for 8 GB, but the idea (small point encoder token + RGB) transfers to a small policy.
+Decision impact:
+ - Q04 3D/depth: supports adding a depth/point-cloud branch (EE-frame) for 3D shifts: viewpoint 45° 70 vs 0 (CogACT), height and scale shifts better — confidence M (real, 10 trials, confounded architecture).
+ - Q11 cameras/viewpoint: 3D input gives viewpoint robustness (15–45° shift, 90/80/70 vs 60/40/0) — confidence M.
+ - Q14 robustness: lighting change still -20 pts, background -13 pts for the 3D-augmented VLA with no augmentation — confidence L.

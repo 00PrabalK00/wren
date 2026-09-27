@@ -1,0 +1,3 @@
+# W3_StochasticTrajectoryOptimizationforRobot — Stochastic Trajectory Optimization for Robotic Skill Acquisition From a Suboptimal Demonstration (MSTOMP, 2024/25)
+Not decision-relevant: this is single-demonstration trajectory optimization (multi-policy STOMP with DTW / frequency-domain MSES shape cost + collision cost) that re-times/reshapes one known trajectory; there is no visual policy, no perception, no learned closed-loop controller, so it bears on none of Q01–Q14 for a visuomotor SO-101 policy.
+Only tangential point: it low-pass (frequency-domain gain control) denoises jittery human demonstrations before use — consistent with the FGO note's advice to filter teleop jitter; no success-rate evidence relevant to BC. No ledger entries.

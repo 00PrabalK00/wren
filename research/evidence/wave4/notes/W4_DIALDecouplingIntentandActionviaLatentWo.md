@@ -1,0 +1,17 @@
+# W4_DIALDecouplingIntentandActionviaLatentWo — DIAL: Decoupling Intent and Action via Latent World Modeling for End-to-End VLA (2026, arXiv 2603.29844)
+Setup: System-2 = Qwen2.5-VL-3B (ViT + text embedding frozen, LLM trained) predicting N=64 query tokens = ViT features of o_{t+H}; System-1 = 4-layer self-attn fusion + 16-layer DiT flow-matching head (latent inverse dynamics), chunk H=16 (H=50 for multi-stage real tasks), 224x224. Sim: RoboCasa GR1 tabletop 24 tasks, 50 episodes each; full data 1000 demos/task, few-shot 100/task. Real: IRON-R01 humanoid (50-D state/action), 4 tasks, 120 robot demos/task + pretraining on 32k proprietary robot + 30k EgoDex human trajectories, 160k pretrain + 2k fine-tune steps. Real trial counts not stated. Compute not stated (3B VLM — far beyond 8 GB).
+Claim: forcing the policy to act through a predicted future-feature bottleneck (latent inverse dynamics) in the frozen ViT space, with a decoupled warmup, beats loose auxiliary future prediction and plain VLA fine-tuning.
+Evidence (sim, 24-task avg): full data — DIAL 70.2, FLARE 55.0, GR00T-N1.6 47.6 (others in figure: DP, UWM, Qwen3-based π/FAST/OFT/GR00T 24–51, exact mapping figure-only). Few-shot 100/task — DIAL 58.3 (> FLARE full-data 55.0).
+Ablations (few-shot, same Qwen2.5-3B backbone):
+ - frozen VLM GR00T-style 21.8 → LLM fine-tuned 30.6 → +FLARE-style auxiliary future-latent loss 51.9 → +SEER-style future tokens as extra context 49.6 → +SEER with extra vision path 47.2 → DIAL bottleneck 58.3.
+ - Foresight target in DINOv2 space instead of VLM-native ViT: 58.3 → 47.2 (space mismatch between Sys-2 and Sys-1 hurts).
+ - EgoDex human data (sim): pick&place 56.0 → 60.8, articulated 65.3 → 62.0 (no coverage), OOD avg 46.2 → 51.2 (unseen objects 34.8 → 41.1).
+ - Real: removing decoupled warmup: ID avg 77.5 → 57.5, OOD 58.3 → 30.0; removing human pretraining data: OOD 58.3 → 26.7.
+Failure/limitations: huge pretraining corpus (62k trajectories) + 3B VLM; real-robot trial counts unreported, figure-heavy; only Qwen2.5 backbone; ViT frozen. Gains relative to baselines partially reflect pretraining data. Not reproducible on laptop.
+Conflicts: supports the "future prediction as auxiliary helps" family (FLARE +21 pts over FT in sim) and goes further: enforced bottleneck > auxiliary loss. Contrasts with papers finding auxiliary future prediction gives small gains for small single-task policies — here the base is a VLM with 100 demos/task over 24 tasks (multi-task, language-heavy).
+Relevance: architecture itself too big for 8 GB/low latency. Transferable idea: a small policy with an auxiliary loss predicting frozen-encoder features of the frame H steps ahead (cheap, no pixel decoding), plus warm-start where the action head first learns with ground-truth future features. Also: fine-tuning the VLM but freezing ViT improved 21.8→30.6.
+Decision impact:
+ - Q09 auxiliary objectives: future-latent prediction (in frozen encoder space) strongly helps in low-data multi-task sim (30.6 → 51.9 aux, 58.3 bottleneck) — confidence M (sim, same authors' baselines).
+ - Q03 vision encoder: foresight target must match the policy's own frozen encoder space; DINOv2 swap −11 pts — confidence L (specific to their dual system).
+ - Q12 model size: frozen 3B VLM as encoder performs poorly (21.8%) without structure — big frozen VLM is not enough by itself — confidence L.
+ - Q13 data: human (EgoDex) pretraining raises OOD (46.2→51.2 sim; 26.7→58.3 real) — confidence L (requires large human corpus, not our setting).

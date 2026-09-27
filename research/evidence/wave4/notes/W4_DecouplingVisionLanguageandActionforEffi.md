@@ -1,0 +1,22 @@
+# W4_DecouplingVisionLanguageandActionforEffi — Decoupling Vision, Language, and Action for Efficient Multi-Task Robot Policies (DEM) (2026, arXiv 2609.18374)
+Setup: Sim: 18 RoboCasa atomic tasks, 500 demos/task, 50 Claude-generated instruction paraphrases for train, 10 held-out paraphrases at eval, randomized layouts; every policy 300k steps, 100 rollouts/task (SE ≈1.2 pts on mean). Real: xArm7 on linear rail (8 DoF), scene cam + wrist cam, 3 FurnitureBench assembly tasks (drawer, lamp, cabinet), 200 teleop demos/task, 100k steps, 50 rollouts/task/method. Model: DINOv3 ConvNeXt-B (87.6M, fine-tuned; 16×16 stage-3 tokens per 256-px camera, 512 tokens for 2 cams) + frozen NeoBERT (222M, cached) + 107M DiT-style cross-attention MeanFlow head (d=768, 8 blocks, zero-init gates), chunk H=16, replan every 8. 417M total, 195M per step. Train on 8×H100; eval on RTX PRO 6000, BF16.
+Claim: modern standalone encoders + compact one-step (MeanFlow) head match 3B VLM-backbone VLAs on trained skills at 8–17× lower latency.
+Evidence:
+ - RoboCasa avg: DEM 55.6; GR00T N1.7 56.9; pi0.5 54.6; TurboVLA 46.3; ReactVLA 41.9; OpenVLA 41.7; SmolVLA 39.2; Octo 25.6.
+ - Latency (forward pass, batch 1): DEM 6.1 ms (10.4 ms if language re-encoded each step); SmolVLA 99.3 ms; pi0.5 103.3; GR00T 51.8; OpenVLA 118.0; Octo 35.0. Energy DEM 2.07 J vs SmolVLA 17.26 J.
+ - Real (50 trials/task): DEM 66.0 (72/82/44) vs GR00T 68.0 (74/84/46), pi0.5 63.3 (70/80/40), TurboVLA 53.3.
+Ablations (single training run each; SE ~1.2 pts):
+ - Vision encoder (Table III): DINOv3 ConvNeXt-B FROZEN 32.6 → FINE-TUNED 55.6 (+23); DINOv3 ViT-B/16 ft 54.1; SigLIP-So400M ft 53.9; Qwen3-VL ViT ft 51.8. Fine-tuning >> choice of encoder; larger VLM towers not better.
+ - Language encoder (Table IV): none 11.3; one-hot task ID 37.4; T5-base 44.5; BERT-base 47.8; mmBERT 50.6; Gemma2 55.0; Qwen3-VL LM 54.3; NeoBERT fine-tuned 55.1; NeoBERT frozen 55.6. (Note one-hot is hurt by paraphrase/multi-task ambiguity in the eval protocol.)
+ - Action head (params matched, Table V): Diffusion Policy (16 passes) 53.8; flow matching (10 passes) 54.7; ACT (1 pass) 52.4; MeanFlow (1 pass) 55.6 — all within 3.2 pts; cost differs 27 vs 40 vs 164 vs 163 calls/s.
+ - Chunk length (Table VI, replan H/2): H16 55.6; H8 55.9; H4 52.7; H2 51.4; H1 (every step) 50.6. Flat 8–16, mild drop at 1.
+Failure/limitations: authors: trained-task scope only (no novel objects/compositions), system-level comparisons, single training seed, forward-pass-only latency. Critical: 500 demos/task in sim, 200 in real — ~2–4× our data; robustness to lighting/camera shift not tested; 417M params trained on 8×H100 (fine-tuning ConvNeXt-B + 107M head on 8 GB would need small batch/AMP but is feasible; inference certainly fits).
+Conflicts: agrees with other studies that action-head choice matters little once representation is good (vs ACT paper's CVAE necessity — here ACT-style head at 52.4 in large-data regime). Frozen-vs-fine-tuned: strongly favors fine-tuning the vision encoder (+23 pts) — contradicts "frozen pretrained features suffice" claims from PVR studies (those were often with small data; with 500 demos/task fine-tuning wins). SmolVLA underperforms (39.2) and is ~16× slower than DEM — matches our SmolVLA experience.
+Relevance: very strong template for our laptop: DINOv3 ConvNeXt-B (or ViT-S) per camera, fine-tuned; frozen small text encoder with cached tokens (only needed when we add a 2nd object); one-step MeanFlow head → ~6 ms forward pass (on a far bigger GPU; expect maybe 20–40 ms on RTX 5060), removing the 2 s SmolVLA latency problem and making chunk-boundary jerk addressable by frequent replanning. Replanning every step costs only 5 pts here.
+Decision impact:
+ - Q01 action head: heads within 3.2 pts (DP 53.8, FM 54.7, ACT 52.4, MeanFlow 55.6); pick one-step MeanFlow for latency — confidence M (sim, single seed, large data).
+ - Q03 vision encoder: fine-tune a pretrained encoder (frozen 32.6 vs ft 55.6); DINOv3 ≥ SigLIP ≥ VLM towers — H (controlled, 1800 rollouts per config).
+ - Q08 language: frozen modern text encoder + cross-attention is enough; LLM text towers no better; one-hot 37.4 vs text 55.6 under paraphrase eval — M.
+ - Q06 chunking: H 8–16 with replan H/2 best; per-step replanning only −5 pts — M.
+ - Q10 latency: decoupled small policy 6.1 ms vs SmolVLA 99 ms / pi0.5 103 ms on same GPU — H.
+ - Q12 model size: 195M active params ≈ 3B VLAs on trained tasks — M.

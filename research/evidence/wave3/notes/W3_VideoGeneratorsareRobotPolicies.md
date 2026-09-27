@@ -1,0 +1,19 @@
+# W3_VideoGeneratorsareRobotPolicies — Video Generators are Robot Policies (Video Policy) (2025, arXiv id not in text)
+Setup: Stable Video Diffusion (SVD) image-to-video U-Net fine-tuned to generate multi-view robot videos (gripper + 2 side cams, 8 frames/view, 32-step horizon subsampled x4), CLIP text conditioning; a DP-style 1D CNN U-Net action head conditioned on 5 intermediate video-decoder features; stop-gradient from action loss to video model. Sim: RoboCasa 24 tasks (50 human demos/task, 50 rollouts/task in OOD scenes), Libero10. Real: handheld-gripper (UMI-like) demos, 200 per task, 5 tasks, 3 cams (2 D435 side + fisheye gripper), 30 Hz, relative EE pose + jaw + grasp force, execute 24 of 32 steps; 10 rollouts per condition. Training ~2 weeks on 8 A100; inference ~9 s per 25-frame video on A100 (30 steps).
+Claim: training a video generator on policy-execution videos makes a strong, generalizable policy; the action decoder needs little data and can even generalize to tasks with action-free videos only.
+Evidence:
+ - RoboCasa avg (50 demos): Video Policy 0.63 (0.66 with 300 MimicGen demos); UVA 0.06; GR00T with 300 demos ~0.50 (Table 7: GR00T 30/100/300 demos = 0.17/0.32/0.50); DP-ResNet / DP-CLIP / DP3 / 3D Diffuser Actor in the 0.23-0.50 range (column alignment ambiguous in extracted text). Largest gains on pick-and-place with OOD objects/scenes.
+ - Libero10 avg: Ours 0.94, UVA 0.90, pi0 0.85, pi0-FAST 0.60, DP-T 0.58, OpenVLA 0.54, DP-C 0.53.
+ - Real (10 rollouts; location / unseen objects / unseen background): open drawer 0.8/1.0/0.9; pick-place 1.0/0.9/0.8; M&Ms-to-cup 0.8/0.9/0.2; upright 0.3/0.7/0.8; stack cups 0.3/0.2/0.2. No real baseline.
+Ablations (RoboCasa):
+ - Joint end-to-end 0.57 vs 2-stage (video first, frozen, then action head) 0.63 vs action head on un-finetuned SVD 0.09 -> generic video pretraining features useless without in-domain video fine-tuning.
+ - Video prediction horizon (MimicGen-sampled eval): 32 steps 0.67, 16 steps 0.55, 0 steps (reconstruct input) 0.30 -> future prediction as the representation objective matters, more for distribution-shifted tasks.
+ - Action head trained on 12/24 tasks (video on all 24): 0.41 overall vs DP-ResNet on same 12 tasks 0.21.
+Failure/limitations: 9 s inference per chunk on A100, 2 weeks x 8 A100 training — infeasible on 8 GB laptop and for our latency; single embodiment; real eval 10 rollouts without baselines; failures when generated video is physically wrong (upright, stacking); background color change breaks precise small-object localization (M&Ms 0.8 -> 0.2).
+Conflicts: Future-video prediction as representation objective helps strongly here (0.30 -> 0.67) whereas SimDist found pixel reconstruction HURTS and KAI found future-depth aux weak. Reconciliation: here the video model is a huge pretrained generator and the target is FUTURE dynamics over 1.6 s, not reconstruction of the current frame (0-step variant = reconstruction = worst, consistent with SimDist). Also agrees with Vidar: clean-trained policies still break on background change for precise tasks.
+Relevance: Not deployable for us. Lessons: (1) if adding a predictive aux loss, predict the future (not reconstruct the present); (2) stop-gradient / two-stage training of representation then action head beat joint training here; (3) background change hurts precise localization even with huge priors -> augmentation/background diversity still needed.
+Decision impact:
+ - Q09 aux objectives: supports future-frame prediction over current-frame reconstruction (0.67 vs 0.30) as representation objective — M (sim, 50 rollouts x 24 tasks; huge model)
+ - Q10 latency: video-generation policies ~9 s/chunk on A100 — incompatible with our budget — H
+ - Q14 robustness: unseen background drops precise small-object task 0.8 -> 0.2 even with video prior — L (10 rollouts)
+ - Q12 model size: 50-demo video-pretrained 1.5B model beats GR00T trained on 300 demos (0.63 vs ~0.50) in sim — L

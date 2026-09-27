@@ -1,0 +1,13 @@
+# ActionPriorDenoising (Soft RTC) — Action-Prior Denoising for Smooth Real-Time Chunking (Liu et al., ROKAE, May 2026, arXiv 2605.25537)
+Setup: training-time RTC generalisation: overlap tokens beyond the hard committed prefix are corrupted from PARTIALLY denoised states (action prior) rather than pure noise, with a delay-scaled soft window (N=1 or N=2 × delay); at inference the aligned previous chunk is blended in token-wise. One-epoch fine-tune from the public RTC Kinetix checkpoints (12 large levels). Real: single-arm 4-object sorting via LeRobot/OpenPI runtime, 10 trials per method (Base naive async, Train Hard RTC, Train Soft RTC); no inference-time RTC on hardware.
+Evidence:
+ - Kinetix (Table I; overall solve / high-delay d∈{3,4} solve / high-delay jerk / runtime vs naive at batch 1): Base naive 0.691/0.531/2.533/1.00×; Inference hard RTC 0.783/0.693/2.501/2.63×; Inference soft RTC 0.778/0.678/2.471/2.68×; Train hard RTC 0.815/0.732/2.416/1.07×; Train soft N=1 0.809/0.724/2.413/1.04×; Train soft N=2 0.781/0.702/2.185/1.05×.
+ - Soft N=2 vs hard: high-delay action delta 1.403→1.276 (−9.1%), jerk 2.416→2.185 (−9.6%), at −3.4 pts solve.
+ - Real (Table II, 10 trials each; success / placements of 40 / objects per min / 2nd-diff D2 / chunk-boundary jump / latency): Base 6/10, 33/40, 3.18, 0.0047, 0.0520, 60.6 ms; Train hard RTC 9/10, 39/40, 5.07, 0.0030, 0.0285, 87.0 ms; Train soft RTC 8/10, 37/40, 5.21, 0.0024, 0.0118, 87.5 ms. Boundary jump: hard RTC −45%, soft −77% vs base. Base shows back-and-forth oscillation and stalls near contact.
+Ablations: offset window L after the hard prefix: L=1 −4.6% jerk at solve 0.815→0.759; L=2 −14% jerk but high-delay solve 0.732→0.486; L=5/6 high-delay solve 0.124/0.115 — longer soft windows over-regularise quickly. Fixed windows h=5 too aggressive, h=3 behind delay-scaled.
+Failure/limitations: operating points from single seeds (not seed-averaged); hardware study preliminary (10 trials); the 60.6 vs 87 ms latency difference is deployment config, not method cost. 
+Conflicts: supports TT-RTC (training-time ≈1.0× runtime vs 2.6× for inference-time RTC; better high-delay solve). Contrasts with RTC's claim that soft masking beats hard masking — here, at training time, soft windows trade success for smoothness.
+Relevance: high: gives a real-robot quantitative smoothness metric set (finite differences of commanded actions and chunk-boundary jump) we can log on SO-101; confirms training-time RTC improves both success and continuity over naive async on a single arm.
+Decision impact:
+ - Q10 async: training-time hard-prefix RTC first; soft window N=1–2 only if jerk still visible — M (Kinetix + 10-trial real).
+ - Q10 metrics: log commanded-action D1/D2/D3 and boundary jump — H (methodology).

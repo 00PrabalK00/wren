@@ -1,0 +1,11 @@
+# W4_DissectingMotionPriorRegularizationforDa — Dissecting Motion-Prior Regularization for Data-Scarce Robotic Insertion (2026, arXiv id not in text)
+Setup: AUBO-i5 6-DoF, eye-in-hand monocular RGB + wrist F/T, parallel gripper; 1 task family (unplug-transfer-insert plug), 15 teleop demos, no sim pretraining; Diffusion Policy with ResNet-18, Cartesian delta translation + 6D rotation + gripper + compliance code, short obs history, 100–200k iters, policy 10–20 Hz, impedance control 50–200 Hz; 5 regularization settings × 80 real trials (20 each Seen/Geometry/Pose/Lighting).
+Claim: Training-time minimum-jerk penalty on predicted chunk positions gives a small success gain (+5 pts) in 15-demo insertion; speed-curvature adds nothing on top.
+Evidence (pooled 80 trials each): Full (jerk + speed-curvature) 70/80 = 87.5%; jerk only 70/80 = 87.5%; speed-curvature only 69/80 = 86.3%; neither 66/80 = 82.5%; generic smoothness 67/80 = 83.8%. Archived (non-concurrent) system comparison: full 70/80, FoAR 67/80, plain Diffusion Policy 58/80, vision-only BC 49/80.
+Ablations: add min-jerk to neither → +5.0 pts; add speed-curvature to neither → +3.75; interaction −3.75 (no synergy); generic smoothness only +1.25 over neither. All Wilson CIs overlap substantially.
+Failure/limitations: authors — archival pilot, no per-condition counts, unreported loss weights, no jerk measurements, single seed, cannot claim robustness or safety. My read: differences are 1–4 trials out of 80 — statistically indistinguishable; lighting condition class exists but no breakdown. The archived 58/80 plain DP vs 70/80 full suggests the F/T + other package matters more than the priors.
+Conflicts: consistent with LiPo/inference-time smoothing literature that smoothness is a small effect on success; does not address chunk-boundary discontinuity (penalty is intra-chunk only).
+Relevance: Minor. A cheap intra-chunk jerk penalty is harmless to add; it does NOT fix our jerk at chunk boundaries under async inference (explicitly not constrained). 15-demo eye-in-hand result shows wrist cam + small DP can work data-scarce.
+Decision impact:
+ - Q10 smoothness: intra-chunk min-jerk training penalty gives ≤5 pt (non-significant) gain, doesn't address inter-chunk jumps — confidence L (n=80, overlapping CIs)
+ - Q09 aux objectives: motion-prior regularizers are weak aux signals — confidence L

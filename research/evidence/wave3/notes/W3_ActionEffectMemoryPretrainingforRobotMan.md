@@ -1,0 +1,20 @@
+# W3_ActionEffectMemoryPretrainingforRobotMan — Action-Effect Memory Pretraining for Robot Manipulation (AEM) (2026, arXiv n/a in text)
+Setup: sim RoboTwin2.0 (11 dual-arm tasks, clean + randomized: distractors, pose, lighting, texture), RMBench non-Markovian tasks (2); real Franka + single exocentric RealSense D435, 3 tasks (place corn, rotate mouse, block into drawer + close), standard and distractor settings. Downstream DP (ResNet, UNet, 100-step DDPM, horizon 8, execute 6) and ManiFlow (R3M-init encoder); 224×224; single-frame policy + one AEM vector (history window 16). AEM: frozen DINOv2 CLS per frame interleaved with actions → Mamba, masked autoencoding (mask 0.7), final vision token = memory. 1× RTX 4090. Sim: 25 rollouts per eval, BEST checkpoint reported. Demo counts not stated; real trial count not stated (percentages in 5% steps → likely 20 trials).
+Claim: pretraining a compact vision-action history vector with masked modeling improves DP/flow policies, especially under randomization and non-Markovian tasks, cheaper than frame stacking.
+Evidence:
+ - RoboTwin 11-task avg (Table I): DP 29.8 → DP+AEM 50.5; ManiFlow 9.8 → 29.1.
+ - Place Shoe (Table II, clean/random succ.; ms per control step): DP 1-frame 0.40/0.08, 623 ms; DINOv2 concat 1-frame 0.52/0.12, 752 ms; DINOv2 stack 8 frames 0.52/0.12, 797 ms; stack 16 frames 0.40/0.12, 824 ms; DP+AEM 0.76/0.20, 730 ms (latency dominated by 100-step DDPM UNet).
+ - Real (Table V, standard): DP avg 43.3 → 81.7 (corn 60→95, mouse 50→80, drawer 20→70). With distractors: DP 15.0 → 68.3 (25→85, 20→75, 0→45).
+Ablations (Handover Block / Place Object Basket):
+ - Fusion: concat 0.96/0.76 vs feature add 0.88/0.52.
+ - Memory trained jointly with policy (no pretraining) 0.60; memory only (no current obs) 0.44/0.36; obs-only pretraining (no action reconstruction) 0.68/0.44.
+ - Encoder for memory: DINOv2 CLS 0.96/0.76, DINOv2 pool 0.84/0.48, DINOv3 CLS 0.76/0.52, DINOv3 pool 0.72/0.40, CLIP CLS 0.84/0.44.
+ - Mask ratio 0.3→0.7: monotonic improvement (figure only). Best 32-step pretraining window with 16-step inference window (figure only).
+Failure/limitations: authors: no large-scale pretraining. Critical: best-checkpoint reporting with 25 rollouts; baselines are weak (DP 29.8% avg, ManiFlow 9.8% — suspiciously low for ManiFlow); real trials few; history includes past ACTIONS, so gains could partly come from action-history copycat shortcut on smooth demos — not tested; no comparison against simply using DINOv2 as the policy encoder with proper tuning.
+Conflicts: Naive frame stacking not helping (16 frames 0.40 vs 1 frame 0.52) agrees with copycat/causal-confusion literature and with DP's finding that short obs horizons (2) are best; the gain here comes from a pretrained compressed memory. Proprio/action-history inputs are known to cause copycat problems (Wen et al.), contrasting with AEM feeding action history — possibly OK here because the memory is frozen after pretraining.
+Relevance: Our pick-place pumpkin task is largely Markovian; memory mostly matters for phase ambiguity (e.g., "has grasp succeeded"). Distractor robustness gain on a real RealSense-exocentric setup is interesting but n is small. Frozen DINOv2 CLS features are cheap and a sensible memory substrate on 8 GB GPU.
+Decision impact:
+ - Q07 history/memory: raw frame stacking 8/16 frames gives no gain (0.52/0.40 vs 0.52 single) while pretrained compact memory helps (0.76) — supports single-frame + compact memory over stacking — confidence L (one task, 25 rollouts, best ckpt)
+ - Q09 auxiliary objectives: masked vision+action reconstruction pretraining > obs-only (0.96 vs 0.68) and > joint training (0.60) — supports action-conditioned reconstruction pretext — confidence L
+ - Q03 vision encoder: DINOv2 CLS > DINOv3 and CLIP as memory features (0.96/0.76 vs 0.76/0.52, 0.84/0.44) — supports DINOv2 — confidence L (encoder only for memory module)
+ - Q14 robustness: real distractors DP 15% → DP+AEM 68.3% — ~ history helps under clutter — confidence L (few trials, unknown N)

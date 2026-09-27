@@ -1,0 +1,13 @@
+# TrainingTimeRTC — Training-Time Action Conditioning for Efficient Real-Time Chunking (Black et al., Physical Intelligence, Dec 2025, arXiv 2512.05964)
+Setup: Sim: Kinetix dynamic benchmark (RTC protocol: MLP-Mixer flow policy, H=8, 2048 rollouts/point, delays 0–4, execution horizon s=max(d,1)); training-time variant resumed from epoch 24 and fine-tuned 8 epochs so compute is matched; delays sampled {0..4} with exponentially decreasing weights. Real: π0.6 base model fine-tuned 8,000 steps (bs 512) on box building and espresso making; delays sampled U[0,10) (≤200 ms at 50 Hz); remote H100, 5 denoising steps.
+Method: (1) allow a per-token flow timestep (adaLN scale/shift/gate differ per token — no new parameters); (2) during training replace the first d actions of the chunk with ground-truth clean actions and set their timestep to 1; (3) loss only on the postfix. At inference, overwrite the prefix with the committed actions at every Euler step. ~10 lines of code (Algorithm 1). Same interface as inference-time RTC.
+Evidence:
+ - Kinetix (Fig. 3, figure only): training-time RTC > inference-time RTC at delay ≥2, gap widening with delay; very marginally worse at d=0–1.
+ - Real (Fig. 5, figure only): success and duration at parity with inference-time RTC on both tasks; both faster than synchronous (which shows visible pauses between chunks). End-to-end latency 108 ms (training-time, d≈5) vs 135 ms (inference-time RTC, d≈7) — the guidance backprop adds ~27 ms / 2 control steps.
+Ablations: none beyond the delay sweep.
+Failure/limitations: authors: only supports a HARD prefix (no soft-mask weighting of later overlapping actions); delay distribution must be chosen to match expected latency. Critical read: real results are two tasks with figure-only numbers and no trial counts in text; requires a flow/diffusion head with per-token time conditioning.
+Conflicts: agrees with Legato (training-time continuation beats inference-time guidance) and πR2 (train-time RTC used as a strong baseline, but πR2 beats it on reactive tasks); VLASH conditions on a single future state instead of the full prefix — both are training-time, zero-overhead.
+Relevance: very high and cheap: our SmolVLA expert (or a small flow head) can be fine-tuned with random prefix conditioning; delay sampled over the range our laptop produces. Removes the jerk at chunk boundaries caused by independently sampled chunks (the "naive async" failure).
+Decision impact:
+ - Q10 async continuity: training-time prefix conditioning with randomized delay = RTC quality at zero inference overhead, better at high delay — SUPPORTED — M/H (large sim N, real parity figure-only).
+ - Q01 head: requires flow/diffusion with per-token timestep — M.

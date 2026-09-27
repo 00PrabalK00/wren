@@ -1,0 +1,19 @@
+# W4_WhatMattersWhenDiagnosingandImprovingCon — What Matters, When? Diagnosing and Improving Conditional Visual Grounding in Visuomotor Imitation Policies (2026, arXiv 2609.05376)
+Setup: ACT trained on 100 clean scripted demos per sim pick-place task (T1: random object → fixed receptacle; T2: both randomized); eval with held-out competitor objects/receptacles matching target color, shape or neither (1–3 each; "full mixed" = one of each class); 3 train seeds × 4 eval seeds × 50 rollouts (600/cell); stage-wise metrics P(pick), P(lift|pick), P(place|pick,lift). Interventions: copy-paste distractor augmentation (synthetic competitors pasted into clean demos), phase-dependent attention regularization on one decoder cross-attention head (toward relevant object/receptacle, away from pasted distractors), appearance visual prompt (position-less crop of target, phase predictor picks object vs receptacle crop; hardware crops via manual annotation + SAM 2). Hardware: UR3e, 20 trials/cell. VLA case: π0.5 fine-tuned on 231 teleop episodes (fixed + wrist cams), 5 trials per subgoal.
+Claim: distractor failures are cue- and phase-specific grounding errors (motor routine intact); object-centric augmentation/regularization/prompting fixes them.
+Evidence:
+ - Clean: ACT 98.5% (T1), 99.7% (T2).
+ - T2 with 3 color-matched object competitors: P(pick) 39.2% while P(lift|pick) 93.8, P(place|…) 95.5. Two shape-matched receptacle competitors: P(pick) 97.5 but conditional placement 33.9.
+ - Full mixed distractors (Table I; sim T1/T2; UR3e T1/T2): Standard ACT 39.5/14.0; 0/0 (0/20 each). Copy-paste augmentation only 100.0/64.0 (sim; no HW). ACT-Modified (aug+attn reg+prompt) 94.5/88.5; UR3e 65.0/60.0 (13/20, 12/20). Clean UR3e: standard 17/20 & 16/20 vs modified 17/20 & 15/20 (no clean cost).
+ - Representation (Table II, T2 place phase): aug-only is most distractor-invariant (shift 0.0011) but keeps weaker container geometry (silhouette 0.089) and 66.3% conditional placement; Modified 0.2037 silhouette, 100% conditional placement; standard 33.3%.
+ - Prompt swap probe: giving distractor's crop raises distractor selection from 0–1% to 35–91% (prompt causally steers selection).
+ - π0.5 case: prompt-trained without cue 20/25 (routing 5/10) vs with cue 25/25; regularized 25/25 (non-equivalent conditions).
+Ablations: augmentation-only vs full modified (above); competitor type (color vs shape) and count.
+Failure/limitations: sim demos scripted; hardware only 20 trials, aug-only not tested on hardware; prompts give extra target info; color/shape hierarchy asset-specific; VLA study tiny.
+Conflicts: Agrees with Causal-ACT/ImitDiff that ACT exploits spurious appearance correlations; consistent with Seeker and SVP-IL that explicit object-centric bottlenecks help. Shows invariance alone (heavy augmentation) is insufficient — must preserve task geometry — echoing ChromaGuard's "augmentation can erase needed cues".
+Relevance: Our "different-looking pumpkin" and future second-object/language phase: ACT trained on 100 clean demos drops to 0% on real hardware when look-alike distractors appear, though motor skill is intact. Cheap fix: copy-paste distractor augmentation into our demos (sim 39.5→100 on fixed-receptacle task — our tray is fixed); target-crop prompts/segmentation for disambiguation.
+Decision impact:
+ - Q05 augmentation: copy-paste distractor augmentation: sim full-distractor 39.5→100 (T1, fixed receptacle), 14.0→64.0 (T2) — M (sim 600 rollouts; hardware only for combined method)
+ - Q14 robustness (distractors/look-alikes): standard ACT 0/20 on UR3e with distractors vs ACT-Modified 13/20, 12/20; clean performance unchanged — M
+ - Q08 language/target selection: position-less appearance prompts (target crop) causally steer selection; π0.5 routing fixed by cue — L/M
+ - Q13 data: 100 clean demos without distractor variation → policy relies on color/shape shortcuts — M

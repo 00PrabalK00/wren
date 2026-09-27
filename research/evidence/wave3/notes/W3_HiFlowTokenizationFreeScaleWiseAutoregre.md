@@ -1,0 +1,14 @@
+# W3_HiFlowTokenizationFreeScaleWiseAutoregre — HiFlow: Tokenization-Free Scale-Wise Autoregressive Policy Learning via Flow Matching (2026, arXiv 2603.27281)
+Setup: Coarse-to-fine autoregressive policy: action chunk (T=8) pooled temporally into scales {1,2,4,8}; a Transformer (D=1024, 12 enc/6 flow layers per Table I) predicts each scale conditioned on coarser ones, per-scale flow-matching head (25 Euler steps), open-loop chunk execution. Sim: MimicGen 8 tasks (1K–10K demos, head+wrist cam, multi-task), RoboTwin 2.0 3 tasks (50 demos, 100 rollouts). Real: Toyota HSR mobile manipulator, head cam + hand cam, leader-follower teleop at 10 Hz, 5 tasks x 50 demos, 12 trials/task. Train 8x H200, inference RTX 4090 (no latency numbers).
+Claim: Dropping the VQ tokenizer of coarse-to-fine AR policies (CARP) and using continuous flow matching per scale beats diffusion, ACT and tokenized AR policies.
+Evidence:
+ - MimicGen avg: TCD 68, SDP 78, CARP (VQ-VAE AR) 85, HiFlow 88; Threading 90 vs 70 (SDP, CARP).
+ - RoboTwin (50 demos): Click alarm ACT 32 / DP 61 / HiFlow 69; Move can 22 / 32 / 42; Place basket 1 / 18 / 39.
+ - Real HSR, 50 demos @10 Hz, 12 trials (ACT / DP / CARP / HiFlow): Apple 50.0/66.7/66.7/75.0; Mustard 33.3/58.3/58.3/83.3; Coke 8.3/66.7/58.3/75.0; Ball→Dish 16.7/25.0/33.3/58.3; Orange→Plate 8.3/16.7/25.0/41.7.
+Ablations: number of scales (MimicGen avg): {1,8} 84; {1,4,8} 86; {1,2,4,8} 88; {1,2,4,8,16} 85 — small effects.
+Failure/limitations: only 12 real trials per task (±14% granularity); baselines' hyperparameters at 10 Hz / short chunk may not be tuned (ACT at 8.3% on Coke is suspiciously low); no latency measurement though AR over 4 scales x 26 passes is not cheap; no robustness tests.
+Conflicts: ACT losing clearly to DP/flow at 50 demos with 10 Hz leader-follower data agrees with several recent comparisons (e.g. RoboTwin benchmarks) but conflicts with ACT's own results; plausible reason: 10 Hz data + short chunk hurt ACT, whose design assumed 50 Hz and k≈100. VQ tokenization < continuous flow agrees with other findings that discrete action tokens lose precision.
+Relevance: Very close data regime to ours (leader-follower teleop, 10 Hz, 50 demos, head + wrist cam, place-into-container tasks like pumpkin→tray). Suggests that a generative continuous head (flow/diffusion) is preferable to ACT/L1 or VQ tokens at 10 Hz / 50 demos. The coarse-to-fine hierarchy itself is an optional refinement.
+Decision impact:
+ - Q01 action head: real 50-demo 10 Hz: flow-matching (HiFlow) 41.7–83.3% > DP 16.7–66.7% > ACT 8.3–50%; continuous flow > VQ-token AR (CARP) sim 88 vs 85, real +8–25 pts — supports flow matching / continuous generative heads over CVAE-L1 and VQ tokens — confidence M (12 trials).
+ - Q13 data: at 50 demos pick/place-into-container tasks reach only 42–58% for the best method — expect need for >50 demos for placement precision — confidence L.

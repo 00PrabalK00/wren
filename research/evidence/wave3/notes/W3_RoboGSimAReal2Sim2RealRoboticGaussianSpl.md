@@ -1,0 +1,11 @@
+# W3_RoboGSimAReal2Sim2RealRoboticGaussianSpl — RoboGSim: A Real2Sim2Real Robotic Gaussian Splatting Simulator (2024, arXiv 2411.11839)
+Setup: 3DGS reconstruction of scene + UR5 arm + objects, aligned with an Isaac Sim digital twin; synthesizes demos with novel views/scenes/objects and does closed-loop evaluation. Policy: LLaVA-style VLA (LLaMA3-8B + frozen CLIP, MLP connector) trained on 8xA100. One real task: ring toss (5 mm z tolerance on grasp), 1,000 real samples (40 h manual) vs 1,000 synthetic samples (4 h), 10 trials per condition (3 grasp attempts allowed).
+Claim: GS-synthesized demos give zero-shot real performance comparable to real data and better under novel scene/view.
+Evidence (Table 1, grasp TV/NV/NS; place TV/NV/NS): Real data 100/30/60; 90/0/20. Real + 2D aug 80/40/70; 80/0/60. RoboGSim-only 100/100/100; 90/0/90. (Text states slightly different numbers for the NS comparison — e.g. "90 vs 60" and "40 -> 60" — internal inconsistency.) Cross-validation (Table 2) grasp/place: Real->Real 100/90; Real->RoboGSim eval 100/30; Isaac-Sim-data->Real 80/0; RoboGSim-data->Real 100/90. Rendering 31.3 PSNR, 0.79 SSIM, 10 FPS.
+Ablations: only the data-source comparison above; 2D augmentation hurt test-view (90 -> 80 place) but helped novel scene place (20 -> 60).
+Failure/limitations: single task, 10 trials, 8B VLA, needs multi-view capture + turntable object scans + manual layout alignment; novel view place success 0% for every method (view shift unsolved); evaluator correlation weak (Real->RoboGSim place 30 vs real 90).
+Conflicts: agrees with multi-view/novel-view synthesis notes (BeyondViewpoint) that 3D-consistent synthetic data beats 2D augmentation for scene shift; but here view shift for placing still fails completely.
+Relevance: low-moderate. Heavy pipeline (GS + Isaac + alignment) for a 1-person SO-101 setup; evidence thin. Takeaway: background/scene replacement via 3D-consistent rendering can fix scene shift (place NS 20 -> 90), and pure sim (Isaac textures) data fails in real (place 0).
+Decision impact:
+ - Q05 augmentation: supports 3D-consistent scene/background synthetic demos over 2D aug for scene shift (place NS real 20, 2D-aug 60, GS-synthetic 90; 10 trials) — confidence L.
+ - Q14 robustness: novel camera view place = 0% for all data sources — camera shift remains hard — confidence L.

@@ -1,0 +1,20 @@
+# W4_MasqueradeLearningfromInthewildHumanVide — Masquerade: Learning from In-the-wild Human Videos using Data-Editing (2025, arXiv 2508.09976)
+Setup: Dual Kinova Gen3 (Cartesian IK control, Robotiq 2F-85), ONE egocentric ZED mini RGB camera; 3 long-horizon bimanual kitchen tasks (Stack Pots, Scrape Potato, Sweep Chilis), 50 teleop demos per task in a SINGLE scene; eval in 3 unseen OOD scenes x 10 rollouts (30/task), ablations 25 rollouts in OOD scene 1; partial credit 1/3 per subtask. Model: ViT-Base (ImageNet init) FiLM-conditioned on DistilBERT clip captions + Diffusion Policy head. Human data: 10K Epic Kitchens clips (675K frames) edited by HaMeR hand pose -> inpaint arms (Detectron2+SAM2+E2FGVI) -> overlay rendered robot; encoder pretrained to regress future 2D robot keypoints (H waypoints), and that aux loss is continued during policy co-training. Robot images also get a rendered-robot overlay.
+Claim: Robotizing in-the-wild human videos and using them for an auxiliary 2D future-keypoint loss (pretrain + co-train) makes a 50-demo single-scene policy transfer to unseen scenes.
+Evidence:
+ - OOD scenes avg (Fig. 4, 30 rollouts/task, figure): baselines ImageNet-ViT, DINOv2-ViT, HRP average ~12% vs Masquerade ~74% (text: +62 pts, "5-6x").
+ - ID vs OOD (Fig. 7, Sweep Chilis, 25 rollouts; figure only): all baselines drop sharply from training scene to OOD scene 1; Masquerade roughly equal ID/OOD.
+Ablations:
+ - Remove robot overlay (raw human videos, same losses): "steep performance drop" (figure only).
+ - Remove co-training (pretrain then fine-tune only on policy loss): "dramatic drop" — encoder forgets (figure only).
+ - Amount of edited human video in co-training (Stack Pots, OOD scene 1, 25 rollouts): 0% -> 2%, 10% -> 26%, 50% -> 47%, 100% -> 68%.
+ - Encoder baselines at equal ViT-B size: ImageNet vs DINOv2 vs HRP all low OOD (per-bar values figure only).
+Failure/limitations: authors: hand pose estimator fails on fast motion/occlusion; no depth -> overlay occlusion errors; camera-motion filtering discards many frames; dexterous-to-parallel-jaw retargeting imperfect. Critical read: 10 rollouts per scene; exact baseline numbers only in figures; scenes differ in background/objects/layout, not lighting-controlled; heavy offline pipeline (HaMeR, SAM2, video inpainting, rendering) for 675K frames; single egocentric cam — the "OOD scene" shift includes camera view change relative to scene but camera is rigid to the robot.
+Conflicts: Supports "auxiliary future-keypoint prediction" and co-training with off-domain data (like GeoPredict aux tracks); contradicts the idea that generic pretrained encoders (DINOv2/ImageNet ViT) alone give scene robustness at 50 demos — they collapse OOD here, consistent with iDP3's image-DP OOD failure. Co-training > pretrain-then-finetune agrees with pi0/Octo co-training literature.
+Relevance: Our failures are scene shifts with 50-100 single-scene demos — exactly this regime. But pipeline cost is high and bimanual egocentric setup differs (our SO-101 has fixed scene cam + wrist cam). The transferable lessons: (1) a frozen/pretrained DINOv2 or ImageNet ViT fine-tuned on 50 demos does NOT give OOD scene robustness; (2) keep an auxiliary loss on diverse off-domain data during fine-tuning rather than only pretraining (catastrophic forgetting); (3) off-domain data diversity scales OOD success roughly log-linearly.
+Decision impact:
+ - Q13 data diversity: supports adding diverse (even off-domain, edited) visual data via co-training; OOD 2 -> 26 -> 47 -> 68% as human-video fraction 0 -> 10 -> 50 -> 100% — M (25 rollouts per point, one task)
+ - Q09 auxiliary objectives: supports future 2D keypoint prediction aux loss kept during co-training (no co-train -> dramatic drop, figure only) — M
+ - Q03 vision encoder: generic ImageNet/DINOv2 ViT-B fine-tuned on 50 single-scene demos fails OOD (~12% avg) — M
+ - Q05 augmentation: embodiment-consistent editing (robot overlay/inpainting) needed; raw human video much worse — L/M (figure only)
+ - Q14 robustness: single-scene 50 demos -> 74% avg in 3 unseen scenes vs ~12% baselines — M

@@ -1,0 +1,3 @@
+# W3_LearningtoFoldRealGarmentswithOneArmACas — Learning to Fold Real Garments with One Arm: A Case Study in Cloud-Based Robotics Research (2022, arXiv 2204.10297)
+Not relevant. Remote UR5 T-shirt flattening/folding using quasi-static pick-and-place primitives from an overhead image (FCN heatmaps, keypoints, analytic shape-matching, 10 flattening trials / 5 folding trials). Nothing about closed-loop low-level visuomotor control, action chunking, encoders or robustness in our setting. Minor side notes only: heatmap (implicit/energy) outputs were chosen to handle multimodal human pick points; a visual inverse-dynamics model trained on ~4,000 random real samples did no better than random.
+Decision impact: none.

@@ -1,0 +1,16 @@
+# W3_ConstrainedContextConditionalDiffusionMo — C3DM: Constrained-Context Conditional Diffusion Models for Imitation Learning (TMLR 2024, arXiv n/a in text)
+Setup: KEYFRAME policy: one top-down image → 6-DoF pick pose and place pose (no intermediate trajectory). Sim: 5 tasks (Ravens place-red-in-green, sweeping-piles, hang-cup, kitting-part, two-part-assembly), 1000 oracle demos, 100 rollouts. Real: Franka + top-down RealSense D435 RGB, 20 SpaceMouse demos (place-block-in-bowl big/small, screw-insert), 20 trials; UR10 sim-to-real on depth height maps with 5–100 sim demos. Baselines: Diffusion Policy, IBC, NGDF, Conv-MLP; ablation C3DM-Mask. 10 denoising steps.
+Claim: making the diffusion denoiser "fixate" (zoom/crop around the currently predicted action location at each denoising step) removes distractors and increases precision and sample efficiency.
+Evidence:
+ - Real Franka, 20 demos, 20 trials (DP / C3DM-Mask / C3DM): big blocks 45/60/55%; small blocks 0/40/65%; screw pick 5/0/80%; screw pick+place 0/0/60%.
+ - Sim unseen distractors on place-red-in-green (20 rollouts × 3 seeds): 50% unseen — DP 41.7 ±5 vs C3DM 85 ±4; 100% unseen — DP 33.3 ±10 vs C3DM 90 ±4.
+ - Sim-to-real depth height maps (UR10, 20 trials): DP with 5/50/100 demos kitting 0/0/0%, hang-cup 0/65/60%; C3DM with 5 demos 100%/100%. Real unseen distractors on hang-cup: C3DM "reasonable", DP 0 (figure only).
+Ablations: zoom (C3DM) > mask (C3DM-Mask) for precision (small blocks 65 vs 40, screw 80 vs 0) — masking removes distractors but loses resolution; pure diffusion (no drift) 79% vs drift 60% (place-red-in-green, 200 epochs); more refinement steps → higher success (figure only).
+Failure/limitations: fixation point must be labelled per task (set to gripper actuation location); crop size hand-chosen; re-encodes image at every denoising step (slower than DP, which caches the encoding); top-down camera occluded by arm → no closed-loop recovery; keyframe only.
+Conflicts: consistent with "crop around the object / object-centric input" results (e.g., zoom-in / region-of-interest papers) and with DP-image baselines being brittle to distractors in low data. DP on RGB here is a keyframe DP, not the usual closed-loop chunked DP — the baseline is in a non-native regime, which inflates the gap.
+Relevance: moderate for the idea, low for direct transfer: our policy is closed-loop trajectories. The transferable lesson: a high-resolution crop around the task-relevant region (or the wrist camera, which is a natural "fixation") matters for precision and distractor robustness in 20–100 demo regimes; also depth height maps transferred sim-to-real where RGB did not.
+Decision impact:
+ - Q14 robustness (distractors): fixation/crop around action location 85–90% vs DP 33–42% with unseen distractors (sim) — supports object-centric cropping / attention — confidence M (sim; keyframe).
+ - Q05 augmentation/cropping: zoom-in crop ≫ masking for precision (small blocks 65 vs 40, screw 80 vs 0; real, 20 trials) — supports high-res local crops over masking-only — confidence L-M.
+ - Q11 cameras: authors attribute failure to single overhead cam occlusion and propose eye-in-hand — mild support for wrist camera — confidence L.
+ - Q04 depth: height-map depth enabled 5-demo sim-to-real at 100% while RGB-sim results were lower — confidence L (sim-to-real, not our setting).

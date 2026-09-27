@@ -1,0 +1,3 @@
+# W3_WatchandMatchSuperchargingImitationwithR — Watch and Match: Supercharging Imitation with Regularized Optimal Transport (ROT) (2022, arXiv 2206.15469)
+Setup: extracted text contains ONLY the title and abstract (199 words); full text unavailable. Per abstract: BC pretraining + online RL with optimal-transport trajectory-matching rewards, adaptive BC regularization; 20 sim tasks (DMC, OpenAI Robotics, Meta-World); real: 14 tasks, 1 demo + ~1 h online training → 90.1% avg success.
+Claim/relevance: online RL fine-tuning from few demos — not applicable to our offline BC pipeline, and no method/ablation text available to verify numbers. No decision impact recorded.

@@ -1,0 +1,10 @@
+# W3_DiffusionEDFsBiEquivariantDenoisingGener — Diffusion-EDFs: Bi-equivariant Denoising Generative Modeling on SE(3) for Visual Robotic Manipulation (2024, CVPR; arXiv 2309.02685)
+Setup: Keyframe (pick pose / place pose) prediction, not a trajectory policy. Colored point clouds (sim; real: wrist RGB-D + 3D SLAM scene scan, external RGB-D scan of grasp), SE(3)-equivariant Equiformer GNN, diffusion on SE(3); 5-10 human demos; 20-45 min training per pick or place on RTX 3090. Sim: mug/bottle pick-and-place, 4 OOD scenarios. Real: mug-on-hanger, bowls-on-dishes (sequential), bottles-on-shelf (4 demos).
+Claim: SE(3) bi-equivariant diffusion with locality yields 5-10-demo, segmentation-free, OOD-generalizing 6-DoF pick/place, 15x faster training than EDFs.
+Evidence: sim Table 1 (text garbled): baselines without segmentation fail (R-NDFs 0.00; SE(3)-DiffusionFields ~0.00-0.06); Diffusion-EDFs "total success around 80%" in combined unseen instances+poses+clutter (values ~0.79-0.89 legible). Real results only qualitative in main text (numbers in supplement, truncated).
+Ablations: none readable in main text beyond baseline configurations (with/without pretraining, segmentation, rotation aug).
+Failure/limitations: no trajectory/closed-loop control; requires a separate grasp-observation scan; heavy point-cloud pipeline (SLAM). Critical read: keyframe + motion-planner paradigm, sim numbers with oracle-style demos; no latency figures for closed-loop use.
+Conflicts: Consistent with 3D-input literature (DP3, iDP3) that geometric inputs + equivariance generalize to new poses from few demos; but not comparable to RGB closed-loop BC.
+Relevance: Low. Our SO-101 pick-and-place of a pumpkin could in principle be solved keyframe-style with RealSense depth, but equivariant GNN diffusion on SE(3) is a different stack, and the tray-placement/grasp is simple. Only supports "depth/point cloud gives pose generalization with few demos".
+Decision impact:
+ - Q04 3D input: supports point-cloud + equivariance for generalization to unseen poses/instances/clutter from 10 demos (keyframe setting) — confidence L (sim tables garbled, keyframe-only, heavy pipeline).

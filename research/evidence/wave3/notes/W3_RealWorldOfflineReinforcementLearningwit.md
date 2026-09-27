@@ -1,0 +1,18 @@
+# W3_RealWorldOfflineReinforcementLearningwit — Real World Offline Reinforcement Learning with Realistic Data Source (Real-ORL) (2022, arXiv 2210.06479, ICRA 2023)
+Setup: real Franka + Robotiq, 2x RealSense D435 used only to track AprilTags (low-dim state: joint pos, joint vel, object pos, goal) — no image policy; joint position commands at 15 Hz; 4 tasks (reach, slide, lift, pick-n-place of a heavy glass lid); ~3000 scripted near-expert trajectories (609-1000 per task); algorithms BC (MLP), MOReL, AWAC, IQL; each agent evaluated on 12 real trajectories (score = normalized max reward), 3-seed sweeps for best agents (seed-to-seed change mostly <2%).
+Claim: with realistic (successful, multi-task) data, offline RL (esp. IQL) matches or beats BC in-domain on 2/4 tasks and generalizes better to low-data regions and re-targeted goals; BC and ORL prefer different action spaces.
+Evidence (Table 2, in-domain score; BC best vs best alternative representation):
+ - Action space for BC (absolute joint target vs delta joint): slide AbsVel 0.681 vs best Delta 0.551; lift AbsVel 0.823 vs Delta 0.721; PnP AbsVel 0.818 vs Delta 0.678; reach: Delta best (~0.92) — BC best with absolute joint positions + velocity in state in 3/4 tasks.
+ - ORL agents all prefer Delta: e.g. IQL slide 0.767 (DeltaVel) vs 0.589-0.627 Abs; IQL lift 0.880 vs <0 (AbsVel, violent crash); AWAC/MOReL with Abs actions often crash (<0) on lift/PnP.
+ - Velocity in state: best agents all included joint velocity despite noise (e.g. BC slide AbsNoVel 0.623 -> AbsVel 0.681; PnP 0.632 -> 0.818).
+ - Best in-domain: slide IQL 0.767 vs BC 0.681; lift IQL 0.880 vs BC 0.823; PnP BC 0.818 vs best ORL 0.750 (MOReL); reach tie.
+ - Carved-out region (slide, Table 3): BC on unseen center region 0.764 (vs 0.791 with full data; left/right 0.790/0.774); ORL agents no worse than full-data counterparts. Dynamic goal re-targeting: BC failed to trace circle/square/8 (figure, qualitative), ORL succeeded.
+ - Multi-task data (Table 5): BC does not benefit from other tasks' data (e.g. lift in-domain 0.823 -> 0.58-0.61 trained on slide(+lift)); IQL on PnP improves using slide/slide+lift data (0.601 -> 0.810/0.842).
+Ablations: covered above (Abs/Delta x Vel/NoVel for 4 algorithms x 4 tasks); BC top-K% data filtering: full dataset best (appendix).
+Failure/limitations: authors: 3 ORL algorithms, hyperparameter sensitivity. Critical read: state-based (AprilTags), scripted data, 12 trials/agent, MLP BC without chunking — the Abs vs Delta result is for single-step joint targets at 15 Hz, not action chunks from images.
+Conflicts: consistent with ACT/Diffusion Policy practice of absolute joint/pose targets for BC; contrasts with "delta EE" used by many VLAs (RT-1, Octo) — delta works better when the learner is RL/needs exploration, or with cross-embodiment normalization. Velocity-in-state benefit conflicts with copycat/causal-confusion concerns about history (Q07) — here state is low-dim ground truth where velocity is genuinely informative.
+Relevance: moderate for Q02 on SO-101 (joint-position commands, leader/follower teleop naturally gives absolute joint targets): supports keeping absolute joint position actions for BC. Joint velocity (or 2-frame proprio) as input is cheap and helped here.
+Decision impact:
+ - Q02 action space: supports absolute joint-position targets for BC (3/4 tasks, +0.10 to +0.14 over delta) — M (real, 12 trials/agent + seed sweeps, but low-dim state, single-step).
+ - Q07 observation history: adding joint velocity to state helped best agents (BC PnP 0.632 -> 0.818) — L/M (state-based, not images).
+ - Q13 data: BC does not benefit from naively added other-task data (lift 0.823 -> ~0.6) — L.

@@ -1,0 +1,20 @@
+# W3_WaypointBasedImitationLearningforRobotic — Waypoint-Based Imitation Learning for Robotic Manipulation (AWE) (2023, CoRL, arXiv 2307.14326)
+Setup: preprocessing only — dynamic programming picks the minimal set of demo states whose linear interpolation stays within max-projection error η of the demo; each timestep relabelled with the NEXT waypoint as target; plugged into ACT (chunk 100→50, temporal ensembling) and Diffusion Policy. Sim: ALOHA bimanual sim (50 demos scripted/human, 50 Hz, 3 seeds x 50 evals), RoboMimic Lift/Can/Square image-based (30–200 demos, 3 seeds x 30 inits). Real: ALOHA (leader/follower, 4 cams incl. 2 wrist, 50 Hz), 3 long-horizon bimanual tasks, 25 trials implied by % granularity (not stated explicitly).
+Claim: shortening the effective horizon via automatically extracted waypoints (7–10x fewer decision points) reduces compounding error and improves BC, especially at low data.
+Evidence:
+ - ALOHA sim (Table 1): Cube Transfer scripted ACT 86 → AWE+ACT 99; human 50 → 71; Insertion scripted 32 → 57; human 20 → 30. Others (BC-ConvMLP, BeT, RT-1, VINN) 0–27.
+ - RoboMimic DP vs AWE+DP (Table 2): Can 30 demos 61.0 → 69.0, 50: 82.3 → 85.7, 100: 93.3 → 95.3, 200: 97.3 → 96.7; Square 30: 44.3 → 62.3, 50: 57.3 → 67.0, 100: 82.0 → 91.7, 200: 95.0 → 94.7; Lift 100 everywhere.
+ - Real ALOHA (Table 3): Screwdriver handover ACT 84 → 92; Wipe table 92 → 96; Coffee making 36 → 64.
+Ablations:
+ - Policy class (Fig. 6, figure only, qualitative): AWE helps GMM (5 modes) policies but DEGRADES MSE/unimodal-Gaussian BC — waypoint relabelling adds multimodality (different demos give different waypoints).
+ - Error budget η (Fig. 5, Can, 50 demos): too loose (few waypoints) hurts a lot, too tight hurts slightly; recommend waypoint:trajectory length ratio ≈1:8 (1:5–1:15).
+ - Heuristic waypoints (zero-velocity/gripper-change, fixed interval) fail even at demo replay on Lift (figure only).
+Failure/limitations: ACT's dominant real failure = compounding error on long horizon (early mis-grasp of coffee pod). AWE needs proprio position control; precision tasks need tighter η (coffee: η 0.008 and controller step 0.02 → 0.1 s, i.e. more blocking execution). Authors recommend temporal ensembling on ALOHA for smoothness; if policy "hesitant", disable TE or raise dt. My read: gains vanish at 200 demos (saturation); real improvements with modest trial counts; waypoint execution changes motion timing (slower, more linear), which may matter for smoothness.
+Conflicts: agrees with ACT that plain L1/MSE regression struggles with multimodality (AWE+MSE degrades). Complements chunking literature: another way to shorten horizon; conflicts mildly with dense high-frequency control advocacy (ACT's 50 Hz) — here sparse targets + low-level interpolation are better for long horizons.
+Relevance: moderate-high for a 50–100 demo SO-101 pick-and-place: our data regime is exactly where AWE helps most (30–50 demos: +8 to +18 pts sim). Cheap preprocessing (0.8 s/trajectory). Also a principled way to cope with 10 fps data and teleop jitter (waypoints smooth hand tremor/backlash noise). Requires a multimodal-capable head (CVAE/diffusion/flow), not plain MSE. Waypoint targets are absolute positions — consistent with absolute joint targets.
+Decision impact:
+ - Q13 data: supports demo relabelling to waypoints to boost low-data BC (Square 30 demos 44.3 → 62.3; real coffee 36 → 64) — confidence M (sim + real ALOHA, gains shrink at 200 demos).
+ - Q01 action head: weakens plain MSE regression when targets are multimodal; AWE needs GMM/diffusion/CVAE — confidence L-M (figure only).
+ - Q06 chunking/horizon: supports reducing effective decision horizon; chunk size should be in wall-clock (ACT chunk 100→50 after AWE) — confidence M.
+ - Q02 action space: absolute position targets (joint for ALOHA, EE for RoboMimic) with waypoint relabelling work — confidence L.
+ - Q10 smoothness: temporal ensembling recommended on real leader/follower hardware; blocking-like controller for precision — confidence L (advice, no numbers).

@@ -1,0 +1,13 @@
+[Unit]
+Description=SO-101 Episode Studio server (http://127.0.0.1:8765)
+
+[Service]
+WorkingDirectory=/home/zuci/So101
+Environment=JETSON_HOST=10.42.0.81 PYTHONUNBUFFERED=1
+UnsetEnvironment=PYTHONPATH
+ExecStart=/home/zuci/ripple-research/.venv-smolvla/bin/python -u /home/zuci/So101/server.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

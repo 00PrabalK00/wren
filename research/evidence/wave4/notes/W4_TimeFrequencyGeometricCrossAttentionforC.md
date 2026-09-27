@@ -1,0 +1,16 @@
+# W4_TimeFrequencyGeometricCrossAttentionforC — Time–Frequency Geometric Cross-Attention for Chunked Vision–Language–Action Models (TFGCA) (2026, arXiv 2609.09925)
+Setup: Drop-in 4.23M-param module on pi0.5 (lerobot/pi05_base, ~4B) between transformer output and action head: learnable per-dimension stationary wavelet transform of the action chunk into time–frequency tokens + cross-attention blending dot product with wedge-product magnitude; zero-init output. Chunk/exec 10/10 (LIBERO, EE deltas), 50/50 (RoboTwin, joint qpos, 2nd-difference before SWT). 30k steps, 2×A800, ~26–28 h. Evals: LIBERO, LIBERO-Plus (zero-shot perturbations), RoboTwin 2.0 clean vs randomized (6 tasks, 100 evals each), AgiBot A2 real 3 tasks × 20 trials.
+Claim: explicitly modeling multi-scale frequency and cross-phase (near-orthogonal) structure inside the action chunk improves chunked VLAs, especially OOD.
+Evidence:
+ - LIBERO avg: reproduced pi0.5 96.7 → TFGCA 98.2 (Long 94.6 → 97.0).
+ - LIBERO-Plus total 66.7 → 73.0 (camera 42.1 → 51.5; robot init 62.9 → 73.4; noise 38.4 → 52.3; light 96.3 → 96.4; background 88.4 → 87.8).
+ - RoboTwin 6-task avg clean/randomized: pi0.5 61.3/14.2 → TFGCA 65.0/42.7 (click_bell rand 6 → 86; stack_bowls_three 6 → 59). Leaderboard context (clean/rand): DP 28.3/0.2; ACT 40.2/0.8; DP3 57.0/5.8; RDT 41.5/12.5; pi0 44.2/18.7.
+ - Real AgiBot A2 (20 trials): soap 4 → 6/20; plush toys 17 → 19/20; tissue 9 → 12/20; overall 50.0 → 61.67%.
+Ablations (LIBERO avg / LIBERO-Plus total): w/o SWT 97.7 / 72.1; w/o geometry (dot-product only) 97.8 / 69.7; w/o alignment loss 97.1 / 71.9; full 98.2 / 73.0.
+Failure/limitations: authors: frequency framing weak at short chunks (T=10, one SWT level); mechanism (wedge routing) not causally verified; single seed; no latency measured; chunk-boundary smoothness NOT measured (listed as future work). Critical: the huge RoboTwin randomized gain (+28.5) from an action-head-side module is surprising given no visual change — it implies OOD failures are partly action-decoding/robustness failures; but single training run per config, 100 evals.
+Conflicts: DP/ACT/DP3 near 0% under RoboTwin randomization (trained clean) vs pretrained VLAs 12–19% → pretraining is what gives some visual robustness; consistent with LIT (shortcut) paper that non-visual-pathway changes can shift OOD robustness.
+Relevance: low-moderate. Module targets big VLAs; could be bolted onto a small chunked policy's decoder (4M params) but evidence is only for pi0.5. Useful context number: from-scratch DP/ACT/DP3 collapse to ~0–6% under unseen domain randomization — our lighting/background failures are expected for small non-pretrained policies without data/augmentation countermeasures.
+Decision impact:
+ - Q14 robustness: small from-scratch policies trained on clean data collapse under randomization (DP 0.2, ACT 0.8, DP3 5.8 vs pi0 18.7 on RoboTwin) — supports need for augmentation/pretrained features — confidence M (leaderboard numbers, sim).
+ - Q01 action head: structured chunk decoding (wavelet + geometric attention) +3.7 clean / +28.5 randomized on RoboTwin, +6.3 LIBERO-Plus — L (single seed, big VLA).
+ - Q06 chunking: n/a directly; chunk-boundary smoothness not evaluated — L.

@@ -1,0 +1,6 @@
+# W3_AnchorDP33DAffordanceGuidedSparseDiffusi — AnchorDP3: 3D Affordance Guided Sparse Diffusion Policy for Robotic Manipulation (2025, arXiv 2506.19269; RoboTwin challenge tech report)
+Setup: sim only (RoboTwin, 8 dual-arm task categories, procedurally generated scripted demos), point cloud + simulator-supervised segmentation, per-task MLP point encoders + shared DP U-Net predicting H=8 sparse keyposes (joint + EE 6D rotation, 32-D, L2), executes first keypose; 24 GB GPU.
+Claim: 98.7% avg success under heavy randomization; sparse keypose prediction + privileged segmentation + DAgger-style off-trajectory frames.
+Low relevance: no ablation tables or numbers besides the 98.7% headline; relies on simulator GT segmentation and scripted keypose tags. Qualitative claims only: dense 20–25 Hz action labels cause "inertia" copycat learning; simple per-point MLP encoder more stable than PointNet++/PointNeXt (consistent with DP3); jointly supervising joints + EE pose "helps convergence"; 10% injected off-trajectory recovery frames improve robustness — none quantified.
+Decision impact:
+ - Q13 data: recovery (off-trajectory) frames claimed to improve robustness — ~ recovery demos — confidence L (no numbers, sim scripted)

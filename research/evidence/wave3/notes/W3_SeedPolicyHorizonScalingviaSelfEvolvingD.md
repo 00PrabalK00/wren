@@ -1,0 +1,17 @@
+# W3_SeedPolicyHorizonScalingviaSelfEvolvingD — SeedPolicy: Horizon Scaling via Self-Evolving Diffusion Policy for Robot Manipulation (2026, arXiv 2603.05117)
+Setup: Diffusion Policy + SEGA (recurrent latent state 60×256 updated by gated cross-attention each step; T_obs=3 frames). RoboTwin 2.0: 50 tasks, 50 demos/task, 600 epochs, 100 rollouts × 3 seeds, Easy (clean) / Hard (randomized test). Real: Dexmal DOS W1 (bimanual 14-DoF), single FIXED RealSense D435 RGB (no wrist, no depth), 320×240, 50 demos/task, 5 tasks with state ambiguity (loops, pauses, cover/reveal), 2×50 rollouts. Single RTX 4090D. Params: SeedPolicy-Transformer 33.36M, CNN 147.26M.
+Claim: naive frame stacking in DP degrades as observation horizon grows; a compact recurrent gated latent state turns longer temporal context into gains, especially on long/ambiguous tasks.
+Evidence:
+ - RoboTwin avg Easy/Hard: RDT 1.2B 34.50/13.72; ACT 80M 29.74/1.74; DP-T 20.6M 33.10/1.44; DP-CNN 96.8M 28.04/0.64; SeedPolicy-T 40.08/4.28; SeedPolicy-CNN 42.76/1.54.
+ - Gains grow with task length: Transformer +2.9 (short), +6.4 (medium), +16.0 (long); CNN +13.6/+12.9/+21.9.
+ - Real (100 rollouts/task) DP → SeedPolicy: Looping place-retrieval 14→38; Sequential picking 10→26; Bottle handover 16→54; Food replacement 18→60; Cover-and-reveal 16→58.
+Ablations (Short/Medium/Long task): DP 51/24/33; +temporal attention 51/26/48; +recurrent state 51/28/65; +cross-attn gate (full) 54/32/73; FFN gate 53/21/70. Fig. 1 (figure only): DP success drops as stacked obs horizon increases; temporal attention helps then saturates. Beats ARMT-style recurrent memory and MemoryVLA-style memory bank on 10 tasks (Table 4).
+Failure/limitations: Hard (randomized) scores stay tiny (≤4.3%) — memory doesn't fix visual robustness. Real tasks deliberately chosen to need memory; real DP baseline surprisingly low (10–18%) — single fixed camera, no wrist, 50 demos. Failure modes named: execution stagnation / freezing on demo pauses (zero-velocity loop) and air-grabs from depth ambiguity with a single fixed RGB view.
+Conflicts: Agrees with DP paper's appendix and "copycat/causal-confusion" literature that naive frame stacking hurts; contrasts with papers saying history is useless — here history helps only when encoded with a proper temporal module and on tasks with aliasing/pauses. Small models (20–150M) ≥ 1.2B RDT in clean setting but far worse under randomization (consistent with RoboTwin 2.0 and LLaVA-VLA findings).
+Relevance: Pumpkin pick-and-place is short and mostly Markovian → keep T_obs 1–2 (don't naively stack). But the "freeze on demo pauses" failure is real for SO-101 teleop demos — trim idle pauses from demos, or add a light recurrent state if we see stalls. Their real DP with a single fixed camera had many air-grabs → supports adding the wrist camera (and/or depth).
+Decision impact:
+ - Q07 history: naive frame stacking degrades DP; recurrent gated state +40 pts on long tasks (33→73) and real 16→54 on ambiguous tasks — confidence M (sim ablation on 3 tasks, real on memory-heavy tasks).
+ - Q12 model size: 33M SeedPolicy ≥ 1.2B RDT clean (40.1 vs 34.5) but not under visual shift (4.3 vs 13.7) — confidence M.
+ - Q14 robustness: all small scratch policies ≤4.3% under randomization at 50 demos — confidence H (consistent with RoboTwin).
+ - Q13 data: demo pauses cause zero-velocity freezes — remove idle segments — confidence L (qualitative).
+ - Q11 cameras: single fixed RGB → frequent air-grabs/collisions (qualitative) — confidence L.

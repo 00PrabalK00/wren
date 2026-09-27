@@ -1,0 +1,16 @@
+# W3_OmniDGeneralizableRobotManipulationPolic — OmniD: Generalizable Robot Manipulation Policy via Image-Based BEV Representation (2025, arXiv 2508.11898)
+Setup: Diffusion-policy head on a BEV feature built from multi-view RGB by deformable attention (Omni-Feature Generator, OFG) with calibrated extrinsics and no depth. ResNet18 backbone, 480x480 input, obs 2 steps, 8 action steps, horizon 16, 100k steps, batch 16, 4 seeds. Sim: VLABench-derived 6 tasks (3,000 episodes, 5 cameras A–E). Real: UR5e with 5 cameras; real eval is the "pick up pumpkin" task with 50 demos, 25 trials per condition. Baselines DP, ACT, VQ-BeT, pi0 (LoRA).
+Claim: fusing views into a BEV feature with deformable attention reduces overfitting to viewpoint/background and enables few-shot adaptation to new cameras.
+Evidence:
+ - Sim ID multi-view BCDE (Table 1, avg of 6 tasks): OmniD 91.0 vs DP 82.0, others 43.3–49.7 (ACT 0 on Get Coffee and Set Study Table).
+ - Sim OOD (Table 2, task 0/1): position OOD OmniD 18 vs baselines <=2. Background OOD (4 textures) OmniD 0/90/82/20 vs best baseline <=18. Fine-tune to new camera A with 10 demos: OmniD 88 (same task) / 80 (new task) vs baselines <=2.
+ - Real pumpkin pick (Table 3, 25 trials): original background DP 24 vs OmniD 84. OOD-1 background 0 vs 24; OOD-2 0 vs 8. Fine-tune on new view A with 10 trajectories: DP 0 vs OmniD 60.
+Ablations (sim, Table 4): no OFG 84.3 vs 96.0; single view A 84.0 vs BCDE 96.0; ResNet-101 97.3 vs ResNet-18 96.0 (backbone capacity barely matters).
+Failure/limitations: requires approximate extrinsics (authors say moderate errors are tolerated). Single-task. Real DP at 24% ID with 50 demos and 4 cameras is a suspiciously weak baseline (no augmentation details). Background OOD is still poor in absolute terms (24/8%). No lighting or object-appearance tests. Few-shot camera adaptation still needs 10 new demos.
+Conflicts: agrees with Multi-Camera View Scaling that 2D image policies overfit to viewpoint and background, and with 3D-representation papers that geometric lifting helps OOD. It differs by getting 3D structure from calibrated multi-view RGB instead of depth. The weak DP baseline weakens the size of the claimed gain.
+Relevance: medium-high by task (pumpkin pick-up, 50 demos), low by hardware: we have one scene camera + wrist, while OmniD's gains come from 4-view fusion. Take-aways: (1) a vanilla image DP trained on one background fails completely (0%) on new table textures, so background/color augmentation or segmentation is mandatory for us; (2) camera extrinsics-aware lifting is a path to camera-shift robustness (we could lift the single RealSense view with depth instead of multi-view); (3) ResNet18 is enough.
+Decision impact:
+ - Q14 robustness (background): + geometry-aware/BEV lifting; plain DP 24 -> 0% on new backgrounds (real pumpkin, 25 trials) — confidence M
+ - Q11 cameras: + multi-view fusion (sim 84.0 single vs 96.0 four views); new-camera adaptation with 10 demos 60% vs DP 0% — confidence M (baseline weak)
+ - Q04 3D: + implicit 3D (BEV from calibrated RGB) without depth improves OOD position 18 vs 2 (sim) — confidence L-M
+ - Q12 model size: + ResNet-18 ~ ResNet-101 (96.0 vs 97.3) — confidence L (sim, 1 table)

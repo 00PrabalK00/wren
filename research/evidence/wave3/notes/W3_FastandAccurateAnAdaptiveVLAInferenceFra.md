@@ -1,0 +1,15 @@
+# W3_FastandAccurateAnAdaptiveVLAInferenceFra — Fast and Accurate: An Adaptive VLA Inference Framework through Environment-aware Model Selection (EMS) (2025/26, arXiv n/a in text)
+Setup: two decoupled policies — System 2 = pi0 (chunk 5, ~10 Hz) and System 1 = small BC-ViLT (single-step, ~100 Hz; ACT for dual-arm) trained from scratch on pi0-DISTILLED rollouts — plus an RL switching policy and action fusion at handoffs. LIBERO 4 suites (50 demos/task, 50 trials/task, front + wrist cams); Realman RM75 MuJoCo single/dual-arm; real dual-arm Realman stack-bowls (bowls randomized within 10 cm; trial count not stated).
+Claim: invoking the big VLA sparsely (at episode start, grasps, phase transitions, detected errors) and a small fast policy otherwise gets near-VLA success at near-small-policy speed.
+Evidence:
+ - LIBERO (Table I, mean SR): BCTransformer 70.85, BC-ViLT 86.95, OpenVLA 76.50, pi0 94.15, fixed-switch (every 4 chunks, ratio 0.33) 90.35 (= EMS − 2.05), EMS 92.40 with switch ratio 0.153 and effective 93.4 Hz. LIBERO-10: BC-ViLT 76.6 vs pi0 85.2; EMS marginally > pi0.
+ - Realman sim (System1 / pi0 / EMS): single-arm easy 74 / 83 / 84%; hard (full workspace randomization) 20 / 56 / 50%; dual-arm sim 80 / 93 / 94%.
+ - Real dual-arm stack bowls: ACT (System 1) 60%, pi0 100%, EMS 70%; completion time 18 / 29 / 23 s.
+Ablations (Fig. 4, fixed switching, text numbers): training System 1 on teleop data instead of pi0-distilled rollouts −4.80 pts average; teleop-then-distill fine-tune gives only marginal gains; no action fusion at switch −1.1 avg, −3 on LIBERO-10.
+Failure/limitations: switch ratio definitions >1 in Table II (unclear units); real results small and EMS loses 30 pts vs pi0 on the real task; small models struggle on full-workspace randomization (20% vs 56%).
+Conflicts: consistent with results that small from-scratch policies (ACT/BC-ViLT) match big VLAs in narrow distributions (LIBERO easy suites, 10-cm randomization) but fall well behind under broad randomization/long horizon. Distillation result agrees with "consistent (unimodal, clean) demos are easier to imitate" — pi0 rollouts are cleaner than human teleop.
+Relevance: moderate for Q10/Q12: a two-tier design (big model occasionally, small fast model every step) is an option for our 8 GB laptop but pi0-class System 2 doesn't fit well; more relevant: small single-step/chunk policies reach ~100 Hz while pi0 ~10 Hz; small-policy quality gap grows with workspace randomization.
+Decision impact:
+ - Q12 model size: small BC-ViLT 86.95 vs pi0 94.15 on LIBERO (50 demos/task); gap large under full workspace randomization (20 vs 56%) and real ACT 60 vs pi0 100% — pretrained large models more robust to wider variation; small OK for narrow setups — confidence M.
+ - Q10 latency: sparse big-model calls (15% of steps) keep 92.4% SR at 93.4 Hz action rate; action fusion at switch boundaries +1.1–3 pts — supports fast small policy + boundary fusion — confidence M (sim).
+ - Q13 data quality: training small policy on clean policy-generated (distilled) trajectories +4.8 pts over human teleop demos — supports cleaner/more consistent demos — confidence L-M.

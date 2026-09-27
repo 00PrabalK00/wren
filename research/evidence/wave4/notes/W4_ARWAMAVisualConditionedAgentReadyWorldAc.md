@@ -1,0 +1,19 @@
+# W4_ARWAMAVisualConditionedAgentReadyWorldAc — AR-WAM: A Visual-Conditioned Agent-Ready World Action Model for Robotic Manipulation (2026, arXiv 2609.23578)
+Setup: Sim RoboTwin 2.0 (10 bimanual tasks, 50 clean + 500 randomized scripted demos/task) + RMBench (memory tasks, 50 demos/task), trained jointly; real Astribot S1 dual-arm, 3 long-horizon tasks, sim-pretrained policy fine-tuned on 100 real demos/task, 20 trials/task. Single primary-view image + proprio. 0.5B total = frozen DINOv3 (0.3B) + 0.2B shared transformer (reasoning expert + flow-matching world-action expert), AdaLN conditioning. Task condition = bounding box of target + learnable atomic-skill token (no language encoder); a VLM agent (Qwen3.8-27B / Kimi-K3) supplies boxes. Latency 14.09 ms/chunk on RTX 4090 bf16 (9 ODE steps with KV-cache reuse). Sim: 50 trials/task/setting.
+Claim: bounding-box + skill-token conditioning beats language conditioning, and latent foresight + supervised "reasoning" (mask, end pose, step abstract) targets improve a compact flow-matching policy.
+Evidence (RoboTwin avg SR, clean/random): AR-WAM 87.2/84.2; Fast-WAM 87.8/82.5; LiLa-WAM 85.0/80.4; Motus 76.6/70.3; pi0.5 68.1/62.8; X-VLA 50.1/52.5. RMBench total avg: AR-WAM+Qwen 67.8, +Kimi 51.1, Cortex 61.9, Mem-0 42.0, pi0.5 10.4. Real (20 trials/task avg): AR-WAM 71.7 vs pi0.5 35.0 vs LiLa-WAM 31.7. Latency end-to-end: AR-WAM 14.09 ms, LiLa-WAM 14.97, pi0.5 62.09, Fast-WAM 319.33 (all RTX 4090).
+Ablations (RoboTwin, same backbone/data/schedule; full = 87.2):
+ - Text instruction instead of box prompt → 74.2 (−13.0); box + text → 84.6 (−2.6).
+ - Remove reasoning expert (mask/end-pose/abstract supervision) → 79.4 (−7.8).
+ - Remove foresight (latent future) alignment → 78.6 (−8.6).
+ - Foresight target = raw future DINO patch features instead of compressed "gist" → 76.4 (−10.8, worse than no foresight).
+ - Cross-attention conditioning instead of AdaLN → 73.4 (−13.8); cross-attn relies 2.3x more on proprio (35.6% vs 15.5% action change under permutation) → proprio shortcut.
+Failure/limitations: authors — box prompts too coarse for fine spatial tasks (Swap T no gain), small objects → VLM box errors; skill vocabulary hand-defined; precision data-bound. My read: ablations are sim-only with scripted demos (500 randomized/task, far above our regime); real eval is 20 trials × 3 tasks with only baselines pi0.5 and LiLa-WAM; real gains mostly from agent-side memory/recovery, not policy robustness. Many cited models are from 2026 and unverifiable.
+Conflicts: Future-latent auxiliary targets helping agrees with Fast-WAM / VPP lines (future prediction as training signal). "Predicting raw future patches hurts more than nothing" is a caution against naive reconstruction aux losses. Proprio-shortcut observation agrees with "Do you need proprioceptive states" work.
+Relevance: Frozen DINO-family encoder + small (~0.2B trainable) flow head is a plausible 8 GB-GPU design; for a second object with language, a box/skill token interface (from a detector) may be a cheaper and more robust conditioning than a language encoder. Box jitter augmentation is a transferable trick. Single-camera only; no lighting/camera-shift tests.
+Decision impact:
+ - Q08 language conditioning: weakens raw-text conditioning in favor of spatial (box) prompt + skill token, AdaLN over cross-attn — confidence M (clean same-backbone sim ablation, but scripted data)
+ - Q09 auxiliary objectives: supports compressed latent future-prediction + supervised intent (mask/end-pose) aux losses (+7.8/+8.6 pts); weakens raw-feature future reconstruction — confidence M (sim-only)
+ - Q03 vision encoder: frozen DINOv3 works in compact policy — confidence L (no encoder ablation)
+ - Q07 history/proprio: cross-attn conditioning leans on proprio shortcut; AdaLN mitigates — confidence L
+ - Q10 latency: shared KV-cache between reasoning pass and denoising gives 14 ms for 0.5B on 4090 — confidence M (measured)

@@ -1,0 +1,20 @@
+# W3_StartRightArriveRightAsynchronousExecuti — Start Right, Arrive Right: Asynchronous Execution via Initial Noise Selection (PAINT) (2026, arXiv 2606.19774)
+Setup: Training-free inference method for flow-matching chunk policies. Sim: Kinetix 12 envs (RTC's exact setup, MLP-Mixer flow policy H=8), delays d=0..4, 2048 trials/point. Real: 6 tasks (block stacking, toy in drawer, banana in pot on single ALOHA/ViperX arm; towel flinging, shorts folding bimanual; humanoid part placing), GR00T-N1.5 (H=16, N=4 steps) and pi0 (H=50, N=10), 3 cams 640x480, 20 Hz control, RTX 4070 16GB workstation over LAN, natural delay d~3, 20 trials per method-task. Demo counts not stated in main text.
+Claim: enforce chunk-boundary (prefix) consistency under async inference by inverting the flow ODE from the executed prefix to find the initial noise (backward Euler), then re-painting — no gradients, no retraining — matches/exceeds RTC.
+Evidence (Table 1, SR, 20 trials; TE is run synchronously):
+ - GR00T-N1.5: Block stack TE 0.55 / RTC 0.75 / PAINT 0.75; Toy-in-drawer 0.60/0.75/0.85; Banana 0.60/0.70/0.70; Towel score 0.51/0.76/0.79; Shorts 0.90/0.90/0.95; Part placing 0.50/0.70/0.70.
+ - pi0: Block 0.20/0.50/0.50; Toy 0.15/0.65/0.65; Banana 0.10/0.55/0.55; Towel 0.30/0.54/0.80; Shorts 0.40/0.65/0.70.
+ - Completion time (ATR, s) e.g. pi0 Block TE 58.35 vs RTC 15.30 vs PAINT 14.90; GR00T Block 28.27/16.04/15.32.
+ - Prefix mismatch CON (rad) consistently lower for PAINT (e.g. 0.023 vs 0.030 RTC, GR00T block; towel pi0 0.027 vs 0.039).
+ - Latency: GR00T PAINT 86±2 ms vs RTC 113±3; pi0 PAINT 311±7 vs RTC 213±4 (3N forward calls vs N forward+VJP).
+Ablations:
+ - Sim (Fig 3, figure only, qualitative): naive async degrades sharply with delay; TE and B-spline smoothing give limited robustness (B-spline leaves prefix mismatch ~ naive); BID partial; PAINT >= RTC at all delays; shorter execution horizon s helps RTC/PAINT (more feedback without boundary jumps).
+ - Inversion method (Fig 4): backward Euler ~ DPM2 (2x cost) > single-step RFM, optimization-based, Slide-Naive (shift old noise).
+ - Appendix: PAINT on top of training-time RTC reduces CON 0.11 -> 0.08 at d=4; on A2C2 ~80% CON reduction; success preserved or better at high delay.
+Failure/limitations: relies on OT-FM locality (noise position i -> action position i), may fail with strong token mixing or highly multimodal distributions; Euler inversion less accurate for curved diffusion paths; only d~3 tested on hardware; 20 trials; TE baseline was run synchronously, so its big deficit conflates "averaging" with "stop-and-wait" pauses; triples forward passes (slower than RTC on pi0).
+Conflicts: TE underperforms strongly here (esp. pi0 H=50) — consistent with RTC paper and others arguing TE blends conflicting modes/slows recovery; conflicts with ACT's finding that TE gives small gains (ACT: small from-scratch CVAE, 50 Hz, short effective latency). Post-hoc smoothing (B-spline) insufficient — boundary jerk needs prefix conditioning, not filtering.
+Relevance: Directly targets our "jerky motion at chunk boundaries with async inference" symptom (SmolVLA is flow matching, so PAINT applies without retraining). But with 2 s latency on the laptop, d would be ~20 steps at 10 Hz / ~60 at 30 Hz — far beyond tested d~3; the first fix must be latency (smaller model / fewer steps), then prefix-conditioning (RTC/PAINT/training-time RTC). PAINT's 3N forward passes worsen latency; for a small model with fast inference this is acceptable.
+Decision impact:
+ - Q10 latency/async: supports prefix-conditioned async generation (PAINT/RTC) over naive async, TE, or post-hoc smoothing — confidence M (real, 2 VLAs, 6 tasks, 20 trials, d~3 only).
+ - Q06 chunking/TE: weakens temporal ensembling for large-H flow VLAs (pi0 TE 0.10–0.20 vs 0.50–0.65; ~3-4x slower) — confidence M (TE run synchronously, confound).
+ - Q01 action head: flow matching enables training-free noise-space prefix anchoring (added benefit of flow/OT-FM head) — confidence L.

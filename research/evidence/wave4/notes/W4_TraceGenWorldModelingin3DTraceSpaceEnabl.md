@@ -1,0 +1,16 @@
+# W4_TraceGenWorldModelingin3DTraceSpaceEnabl — TraceGen: World Modeling in 3D Trace-Space Enables Learning from Cross-Embodiment Videos (2025, arXiv 2511.21690)
+Setup: TraceForge converts 123K human+robot videos (8 sources) into 1.8M observation / 3D-trace / language triplets (camera-motion compensation, depth, speed retargeting). TraceGen (0.67B): frozen DINOv3 + SigLIP + SigLIP-with-depth-stem encoders, frozen T5 text, CogVideoX-style 3D transformer flow decoder predicting a 20x20 grid of keypoints x 32 future steps of 3D increments (stochastic-interpolant/linear flow, 100 ODE steps). Execution: from ONE RGB-D frame + instruction, predict a 3D trace, convert to joint commands via IK (essentially open-loop plan). Real: Franka FR3, 4 tasks (fold pants, ball into box, brush sweep, block onto purple area), 10 trials each; warm-up with 5 or 15 target-robot videos, or 5 handheld-phone human videos from a different scene.
+Claim: A 3D-trace world model pretrained on cross-embodiment video adapts to new robot tasks from 5 videos and is much faster than video-generation planners.
+Evidence:
+ - Table 1 (Clothes/Ball/Brush/Block, of 10): 5 robot videos: scratch 10/0/0/0 = 25%; pretrained 10/6/8/8 = 80%. 15 robot videos: scratch 10/0/0/2 = 30%; pretrained 10/9/8/6 = 82.5%.
+ - Human->robot (5 phone videos, different scene/camera): pretrained 67.5% vs scratch 0%.
+ - Pretraining source (5-video warm-up): SSV2 human 35K clips 25%; AgiBot robot 35K clips 45%; full cross-embodiment corpus 80%.
+ - Speed: 3.8x faster than trace-generation baselines, >50x faster than large video-generation models (NovaFlow Wan2.2 >600x slower); sub-10B baselines 0% zero-shot (figure only for exact values).
+Ablations: pretraining vs scratch (above); warm-up 5 vs 15 videos: +2.5 pts only for pretrained model — pretraining dominates.
+Failure/limitations: authors: no control over which trajectory mode is generated; noisy/corrective source demos; zero-shot sometimes physically infeasible; fine-grained tasks lack detail. Critical read: 10 trials per task; open-loop trace from a single frame -> no closed-loop reaction; Clothes task solved 10/10 even from scratch (easy); tasks are coarse (sweep, place in region); requires calibrated RGB-D + IK at deployment.
+Conflicts: Supports the "pretraining on diverse cross-embodiment motion data matters more than more target demos" narrative (like Masquerade, Interleave-VLA PT ablation). 3D trace space as an embodiment-agnostic intermediate agrees with ATM/SSI track interfaces.
+Relevance: Low-moderate. Not a closed-loop visuomotor policy; our precision grasp of a pumpkin with backlash-prone SO-101 would need closed-loop correction. Useful only as evidence that (a) a small number (5-15) of target demos suffices when a strong motion prior exists, and (b) frozen DINOv3/SigLIP encoders + small trainable decoder with depth stem is a reasonable pattern.
+Decision impact:
+ - Q13 data: with strong cross-embodiment pretraining 5 demos -> 80%, 15 -> 82.5%; scratch 25-30% — L (10 trials/task, open-loop tasks)
+ - Q09 auxiliary/world model: 3D trace prediction pretrained on 123K videos as motion prior; source diversity matters (SSV2 25% vs AgiBot 45% vs mixed 80%) — L
+ - Q10 latency: trace space >50x faster than video-generation world models — L (not relevant to reactive control)

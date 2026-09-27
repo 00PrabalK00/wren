@@ -1,0 +1,10 @@
+# W3_ImaginingtheSenseofTouchTouchInformedMan — Imagining the Sense of Touch: Touch-Informed Manipulation via Imagined Tactile Representations (TacImag) (2026, arXiv id not in text)
+Setup: Diffusion Policy consumers; a conditional diffusion model predicts tactile images (TacRGB) or force fields (TacFF) from camera + proprio, trained on paired visuotactile demos (GelSight-type sensor on gripper finger), frozen and fed to a tactile-conditioned DP at test time (no sensor). Sim: 6 TacSL tasks, 50 demos (20 for bulb). Real: 4 tasks (bulb install, whiteboard wiping, belt insertion, ball sorting), 15 trials per config.
+Claim: imagined touch from vision acts as contact-aware supervision that makes subtle visual contact cues exploitable; force-field imagination helps contact tasks, tactile-image imagination helps texture tasks.
+Evidence (real, Table III, Vision / +TacRGB imag / +TacFF imag): bulb (wrist) 26.7/33.3/86.7; wiping (wrist) 20.0/6.7/60.0; belt insertion (wrist) 6.7/0.0/40.0; ball sorting front 26.7/33.3/33.3; ball sorting wrist 33.3/73.3/46.7.
+Ablations: representation choice (TacFF vs TacRGB) flips by task type; wrong representation can hurt (wiping 20 -> 6.7 with TacRGB).
+Failure/limitations: requires a tactile sensor during data collection; 15 trials; vision-only DP baselines are weak (7-33%) so gains are from a low base. Not our problem domain (pumpkin pick-place is not contact-rich).
+Conflicts: consistent with the idea that a structured intermediate prediction (here contact force field) is a better inductive bias than raw end-to-end — like KAI's keypoint/trajectory aux; also shows a poorly chosen intermediate can hurt.
+Relevance: Low for SO-101 pumpkin pick-place (no tactile sensor, not contact-critical). Minor note: wrist camera is the view used for contact inference.
+Decision impact:
+ - Q09 aux objectives: structured, task-matched intermediate predictions help (contact tasks +33 to +60 pts with force-field imagination), mismatched ones can hurt — L (needs tactile data; 15 trials)

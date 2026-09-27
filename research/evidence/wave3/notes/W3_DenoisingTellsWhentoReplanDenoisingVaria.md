@@ -1,0 +1,17 @@
+# W3_DenoisingTellsWhentoReplanDenoisingVaria — Denoising Tells When to Replan: Denoising-Variance Adaptive Chunking for Flow-Based Robot Policies (DVAC) (2026, arXiv id not in text)
+Setup: training-free test-time method for flow-matching policies. Sim: LIBERO (π0.5 horizon 10, baseline executes 5; π0 horizon 50; Qwen2.5-VL-π and Qwen3-VL-GR00T horizon 8), RoboTwin 16 tasks × 50 demos (π0.5 horizon 50, 8×H100), CALVIN. Real: Cobot Magic bimanual, 3 RealSense D435i (2 wrist + head), 3 tasks (cube→bowl, stack 3 cubes, test tubes rack→plate), 50 demos/task, 30 trials/method, π0.5 on 2×A6000, N_min=1, N_max=40.
+Claim: variance of the clean-action estimate over the last L=5 denoising steps is low in free-space motion and high near contact/precision phases; execute only the low-variance prefix (threshold = α × rolling local variance scale) → higher success with fewer replans.
+Evidence:
+ - Real (SR / time s / replans): cube→bowl Fix15 0.800/39.6/25.7, Fix40 0.533/30.4/9.4, DVAC 0.867/34.3/12.5; stack Fix15 0.700/67.5/42.6, Fix40 0.433/52.8/17.2, DVAC 0.767/56.0/24.1; tubes Fix15 0.433/80.3/61.8, Fix40 0.233/60.3/26.5, DVAC 0.533/64.3/31.2.
+ - LIBERO π0.5: fixed-5 0.948 → DVAC 0.980; replans 32.6 → 18.6. Qwen2.5-VL-π 0.950 → 0.958 (32.8→23.0 replans), Qwen3-VL-GR00T 0.933 → 0.938.
+ - RoboTwin 16 tasks avg: π0.5 0.359 → 0.416 (DP 0.237, DP3 0.399). CALVIN-5 avg len 3.905 → 4.040.
+ - LIBERO fixed-execution sweep π0.5 (execute 1..10 of 10): 0.910, 0.927, 0.948, 0.958, 0.948, 0.945, 0.970, 0.955, 0.963, 0.955 — executing only 1 step is worst; π0 LIBERO avg fixed-25 0.675 vs fixed-50 0.635.
+ - Episode breakdown LIBERO: DVAC-only successes 21 vs baseline-only 8 of 400.
+Ablations: fixed numeric thresholds brittle across benchmarks (CALVIN drops to ≤3.716 vs 3.905 baseline) → adaptive (rolling-scale) threshold needed; threshold τ over 1e-4..1e-1 fairly stable on LIBERO but optimum differs per suite/backbone. Operating-phase vs moving-phase variance correlation r < −0.27 (p<0.05) for executed length.
+Failure/limitations: authors: variance is a proxy, not calibrated; requires diffusion/flow (not for ACT/regression); failure case: variance not rising before pre-grasp → long chunk near contact → grasp fail. Critical read: gains on LIBERO are near ceiling; real improvements +6–10 pts at 30 trials (CIs overlap Fix15), but the Fix40 drop (−20 to −27 pts) is large and consistent.
+Conflicts: agrees with ACT/DP findings that very long open-loop execution hurts reactivity; and with Bidirectional Decoding / adaptive-horizon work that the optimal horizon is phase-dependent. Contradicts "just execute the whole chunk" defaults (e.g. RoboTwin baseline executes full 50).
+Relevance: moderate-high for Q06/Q10. With 50 demos real, executing 40 steps open-loop cost 20–27 pts vs 15 steps. For our SO-101 (10–30 Hz), keep execution horizon short near grasp/place; if we use a flow/diffusion head, DVAC is a free add-on that also reduces inference calls (helps our latency budget). Not applicable to a CVAE/L1 ACT head (no denoising trajectory).
+Decision impact:
+ - Q06 chunking/execution horizon: long fixed open-loop execution (40 steps) hurts real success vs 15 (0.80→0.53, 0.70→0.43, 0.43→0.23) — confidence M (real, 30 trials, 50 demos).
+ - Q06/Q10: phase-adaptive execution via denoising variance: +6–10 pts real and −40–50% replans vs Fix15 — confidence M.
+ - Q01 action head: flow matching enables uncertainty-driven replanning (an extra argument for a generative head) — confidence L.

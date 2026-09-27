@@ -1,0 +1,17 @@
+# W3_RoboTwin20AScalableDataGeneratorandBench — RoboTwin 2.0: A Scalable Data Generator and Benchmark with Strong Domain Randomization for Robust Bimanual Robotic Manipulation (2025, arXiv 2506.18088)
+Setup: SAPIEN sim, 50 dual-arm tasks, 731 objects, 5 embodiments; domain randomization (DR) = distractor clutter, 11k SD-generated background/table textures, lighting color/type/intensity/position, table height (≤3 cm), language. Benchmark: 50 clean demos/task, 100 eval rollouts Easy (clean) and Hard (DR). ACT chunk 50 + temporal agg; DP horizon 8; DP3 1024 pts with perfect segmentation. Real: COBOT-Magic dual-arm, 4 tasks, RDT backbone, 10 real clean demos ± 1,000 DR synthetic trajectories (+≤1 cm camera-pose jitter in sim); trial count not stated in text I found (percentages in steps of 2).
+Claim: DR synthetic data makes policies robust to visual/scene shift; clean data alone does not.
+Evidence:
+ - Benchmark avg Easy/Hard (50 clean demos): ACT 29.7/1.7; DP 28.0/0.6; DP3 55.2/5.0; RDT 34.5/13.7; π0 46.4/16.3.
+ - Pretraining study (5+ unseen tasks, 50 clean demos, eval under DR, avg): ACT 2.0; DP 0.0; RDT 18.8 → +clean pretrain 14.6 → +DR pretrain 24.8; π0 22.5 → clean 24.9 → DR 29.1.
+ - Real (avg over 4 tasks) 10 clean real demos vs +1k DR sim: seen bg/clean 29.5→43.0; seen bg/cluttered 14.0→41.5; unseen bg/clean 15.5→39.0; unseen bg/cluttered 9.0→42.0. Sim-only (1k DR): unseen clean 36.5, unseen cluttered 29.5.
+Ablations: DR vs clean pretraining data (above) is the core ablation; embodiment-aware grasp candidates raise data-generation success for 6-DoF arms (Piper +22.7, Aloha +13.5, ARX +5.6 pts; Franka/UR5 ~0).
+Failure/limitations: DP3's strength relies on perfect sim point clouds + background segmentation; real experiments only 10 real demos and RDT; no trial counts stated; bimanual sim; DR pretraining needs a sim twin of our task/robot (SO-101 not supported natively; would need URDF + assets).
+Conflicts: Strongly consistent with LLaVA-VLA paper (same benchmark) and generally with "clean demos → brittle" literature. Contrasts with papers claiming small from-scratch policies can be robust via photometric aug alone — here no aug was applied to ACT/DP so their ~0% Hard results mostly show lack of any visual diversity, not an inherent limit.
+Relevance: Our exact failure (new lighting/background/clutter) is the Easy→Hard gap: small scratch policies with 50 clean demos fall to ~1%. Pretrained VLAs retain some (13–16%). Real evidence that adding visually randomized synthetic data (even from sim) massively helps cluttered/unseen backgrounds (9→42%). For us: either randomize the real collection (lighting, backgrounds, distractors) or add strong augmentation / generative background replacement; clean in-lab demos will not transfer.
+Decision impact:
+ - Q14 robustness: 50 clean demos → ACT 29.7→1.7, DP 28.0→0.6 under clutter/lighting/texture shift — confidence H (100 rollouts × 50 tasks, sim).
+ - Q05 augmentation: DR synthetic data 10 real + 1k sim: unseen bg cluttered 9.0→42.0% real — confidence M (real, few tasks, trial count unclear).
+ - Q13 data: visual diversity in training data, not quantity of clean data, drives robustness (clean pretrain 18.8→14.6 vs DR 24.8) — confidence M.
+ - Q04 3D: DP3 best clean (55.2) but collapses under DR (5.0) even with perfect point clouds — confidence M (sim, perfect segmentation).
+ - Q03 vision encoder: pretrained VLAs degrade less (RDT 13.7, π0 16.3 Hard) than scratch ACT/DP (~1%) — confidence M.

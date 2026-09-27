@@ -1,0 +1,14 @@
+# W3_RoboVIPMultiViewVideoGenerationwithVisua — RoboVIP: Multi-View Video Generation with Visual Identity Prompting Augments Robot Manipulation (2026, arXiv 2601.05241)
+Setup: offline augmentation: segment robot + interacted object (gripper-signal-guided keyframes, SAM2, Cosmos-Reason1 for wrist view), then inpaint background/tabletop with Wan2.1-I2V 14B + LoRA (multi-view vertically stitched, ≤49 frames), conditioned on text + exemplar object images ("visual identity" pool curated from robot datasets). Trained on 8 GPUs × 144 GB. Sim eval: SimplerEnv WidowX, 4 tasks × 100 trials, Octo and π0 trained on BridgeV2 ± augmented data. Real: Franka FR3, cube stacking, Diffusion Policy, 100 real demos, 10 trials per condition (open space vs 4 distractors).
+Claim: temporally/multi-view consistent generative inpainting augmentation improves policy robustness more than single-frame inpainting (RoboEngine) or edge-conditioned transfer (Cosmos-Transfer).
+Evidence:
+ - SimplerEnv avg success: Octo zero-shot 12.2, Bridge SFT 12.8, RoboVIP text-only 13.0, RoboVIP text+ID 18.5. π0: SFT 17.25, +RoboEngine 18.5, RoboVIP text-only 29.0, text+ID 27.75.
+ - Real DP stacking: 100 real demos: open 7/10, cluttered 0/10; 100 real + 100 RoboVIP-augmented: open 10/10, cluttered 9/10.
+Ablations: identity prompting helps Octo (13.0→18.5) but not π0 (29.0 vs 27.75). History length (Octo, figure only): single-frame RoboEngine augmentation collapses to ~0 at 6 history frames, RoboVIP retains success → frame-inconsistent augmentation is harmful for history-conditioned policies.
+Failure/limitations: segmentation (gripper, flicker, wrist view) is a weak link; 10 real trials, one task; real augmented policy also has 2× trajectories (same actions) — confounded; enormous generation compute (14B video model) — offline only, not on our 8 GB GPU (could use a cloud service). Wrist-view augmentation quality not separately evaluated in real.
+Conflicts: agrees with RoboEngine/ROSIE/GreenAug line that background/distractor inpainting fixes clutter brittleness; adds warning that per-frame independent augmentation conflicts with observation history (supports keeping history short or making aug temporally consistent).
+Relevance: Our clutter/background/lighting failures: generative background replacement of our 50–100 demos is an offline, action-preserving way to multiply visual diversity; per-episode consistent augmentation (same background across an episode's frames and consistent across scene+wrist views) matters if we use history.
+Decision impact:
+ - Q05 augmentation: generative inpainting aug, real DP 0/10 → 9/10 in clutter — confidence M (real but 10 trials, 1 task, data doubled).
+ - Q07 history: per-frame-inconsistent augmentation collapses policies using 6-frame history (figure only) — confidence L.
+ - Q14 robustness: 100 clean demos, DP clutter 7/10 → 0/10 — confidence M.

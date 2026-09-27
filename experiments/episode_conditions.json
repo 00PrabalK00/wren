@@ -1,0 +1,590 @@
+{
+ "dataset": "so101_pumpkin_v1",
+ "fps": 10,
+ "episodes": {
+  "0": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "1": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "2": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "3": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "4": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "5": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "6": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "7": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "8": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "9": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "10": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "11": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "12": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "13": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "14": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "15": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "16": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "17": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "18": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "19": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "20": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "21": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "22": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "23": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "24": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "25": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "26": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "27": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "28": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "29": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "30": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "31": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "32": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "33": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "34": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "35": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "36": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "37": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "38": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "39": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "40": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "41": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "42": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "43": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "44": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "45": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "46": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "47": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "48": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "49": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "50": {
+   "lighting": "daylight_original",
+   "pumpkin": "unspecified (both jack-o'-lantern and NYU pumpkins appear)",
+   "background": "original",
+   "camera": "pose_A (daylight sessions)"
+  },
+  "51": {
+   "lighting": "varied (user-recorded 2026-09-26)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 65-91)"
+  },
+  "52": {
+   "lighting": "varied (user-recorded 2026-09-26)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 65-91)"
+  },
+  "53": {
+   "lighting": "varied (user-recorded 2026-09-26)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 65-91)"
+  },
+  "54": {
+   "lighting": "varied (user-recorded 2026-09-26)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 65-91)"
+  },
+  "55": {
+   "lighting": "varied (user-recorded 2026-09-26)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 65-91)"
+  },
+  "56": {
+   "lighting": "varied (user-recorded 2026-09-26)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 65-91)"
+  },
+  "57": {
+   "lighting": "varied (user-recorded 2026-09-26)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 65-91)"
+  },
+  "58": {
+   "lighting": "varied (user-recorded 2026-09-26)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 65-91)"
+  },
+  "59": {
+   "lighting": "varied (user-recorded 2026-09-26)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 65-91)"
+  },
+  "60": {
+   "lighting": "varied (user-recorded 2026-09-26)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 65-91)"
+  },
+  "61": {
+   "lighting": "varied (user-recorded 2026-09-26)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 65-91)"
+  },
+  "62": {
+   "lighting": "varied (user-recorded 2026-09-26)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 65-91)"
+  },
+  "63": {
+   "lighting": "varied (user-recorded 2026-09-26)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 65-91)"
+  },
+  "64": {
+   "lighting": "varied (user-recorded 2026-09-26)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 65-91)"
+  },
+  "65": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "66": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "67": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "68": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "69": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "70": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "71": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "72": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "73": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "74": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "75": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "76": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries",
+   "excluded": "empty: 14 frames, arm never moved"
+  },
+  "77": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "78": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "79": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "80": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "81": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "82": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "83": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "84": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "85": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "86": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "87": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "88": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "89": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "90": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  },
+  "91": {
+   "lighting": "evening (like 51-64)",
+   "pumpkin": "unspecified",
+   "background": "unspecified",
+   "camera": "pose_B (lower/closer; same as 51-64)",
+   "session": "2026-09-26 night: clean grasps from varied positions incl. at the base, plus recoveries"
+  }
+ },
+ "note": "Only lighting was reported by the user; pumpkin/background/camera per episode are not yet labelled.",
+ "excluded_from_training": [
+  76
+ ]
+}

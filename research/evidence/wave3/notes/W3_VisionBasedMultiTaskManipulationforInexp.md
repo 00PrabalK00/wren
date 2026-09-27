@@ -1,0 +1,18 @@
+# W3_VisionBasedMultiTaskManipulationforInexp — Vision-Based Multi-Task Manipulation for Inexpensive Robots Using End-To-End Learning from Demonstration (2018, arXiv 1707.02920, ICRA 2018)
+Setup: $500 total: 6-axis Lynxmotion AL5D + 2-finger gripper, single fixed RGB camera facing the arm, 128x128 images; teleop via Leap Motion / PS Move hand tracking; 3 h of demos per task (909/495/431/428/398 demos for T1-T5: pick bubble wrap to plate, push plate, push+orient box, close+orient pliers, towel-wipe); recorded at 33 Hz and downsampled to 4 Hz with all 8 phase offsets as augmentation; model: conv encoder shared with VAE-GAN reconstruction branch (latent 256), task one-hot, 3-layer LSTM (100 cells), 50-component mixture density output predicted autoregressively joint-by-joint; sampling bias b=1 toward high-probability modes; eval 25 trials per task per method.
+Claim: on a very cheap noisy arm, a single multi-task policy with (a) multimodal autoregressive MDN output and (b) an image-reconstruction (VAE-GAN) auxiliary loss reaches 76-88% success, far better than single-task or ablated versions.
+Evidence (Table I, success % over 25 trials, T1/T2/T3/T4/T5):
+ - Single-task, no autoregressive: 36 / 16 / 44 / 16 / 8 (overfits easily; more dropout or smaller net did not help).
+ - Multi-task, no autoregressive (with VAE-GAN): 16 / 20 / 52 / 64 / 20.
+ - Multi-task + autoregressive, no VAE-GAN: 12 / 72 / 56 / 48 / 16.
+ - Full (multi-task + autoregressive + VAE-GAN): 76 / 80 / 88 / 76 / 88.
+Ablations: removing reconstruction aux loss: avg ~41% -> 81.6% with it (T1 12->76, T5 16->88) — authors: vision encoder undertrained without it, especially for small/occluded objects. Removing autoregressive joint factorization: 34.4% avg vs 81.6% (gripper can close before arm reaches grasp pose). Multi-task vs single-task: helps T2-T5, hurts T1. Prior work (their [27]): LSTM > feed-forward and MDN > MSE (not re-measured here). Offset-downsampling augmentation "useful to regularize" (no numbers).
+Failure/limitations: 25 trials, one scene, no robustness tests (lighting etc.), 400-900 demos per task (far more than our budget), 4 Hz single-step control; 2018-era small from-scratch CNN.
+Conflicts: reconstruction aux strongly helps here (from-scratch encoder, low-res, noisy cheap arm) while "Making Sense of Vision and Touch" found reconstruction inferior to predictive objectives and modern results show pretrained encoders make recon aux less necessary — consistent if the benefit is regularizing an otherwise undertrained scratch encoder. Autoregressive per-joint factorization anticipates later tokenized/autoregressive heads (RT-1/ FAST); ACT/Diffusion achieve the same joint coherence with chunk-level generative heads.
+Relevance: moderate: very close hardware class to SO-101 (cheap, backlash, position control, human teleop). Lessons: (1) multimodal head with joint coherence (gripper conditioned on arm) matters on cheap arms; (2) if training a small encoder from scratch, add a reconstruction/aux loss or use a pretrained encoder; (3) temporal-offset subsampling is a free augmentation when downsampling 30 fps data.
+Decision impact:
+ - Q01 action head: supports multimodal + coherent (autoregressive across joints) output: 34.4% -> 81.6% avg — M (real low-cost arm, 25 trials x 5 tasks).
+ - Q09 aux objectives: image reconstruction aux loss on a scratch encoder: ~41% -> 81.6% avg — M (real, but scratch low-res encoder).
+ - Q08 multi-task: shared multi-task training helped 4/5 tasks vs single-task (single-task overfits) — L/M.
+ - Q05 augmentation: temporal offset subsampling of high-rate demos as regularizer — L (qualitative).
+ - Q13 data: 400-900 demos/task needed for this from-scratch recipe — L.
